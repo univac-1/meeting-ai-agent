@@ -2,9 +2,6 @@ name: Deploy to Cloud Run
 
 on:
   push:
-    branches:
-      - main
-      - init-project
     tags:
       - "cr*"
 
