@@ -2,8 +2,10 @@ name: Deploy to Cloud Run
 
 on:
   push:
-    branches:
-      - main
+    push:
+      branches:
+        - main
+        - init-project    branches:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
