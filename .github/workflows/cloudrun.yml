@@ -11,7 +11,7 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   SERVICE_NAME: meeting-ai-agent
-  REGION: asia-northeast1
+  REGION: ${{ secrets.GCP_REGION }}
   IMAGE: $REGION-docker.pkg.dev/$PROJECT_ID/$SERVICE_NAME/$SERVICE_NAME
 
 jobs:
@@ -48,7 +48,7 @@ jobs:
       - name: Deploy to Cloud Run
         run: |-
           gcloud run deploy $SERVICE_NAME \
-            --image $IMAGE \
+            --image ${{ env.IMAGE }} \
             --region $REGION \
             --platform managed \
             --allow-unauthenticated
