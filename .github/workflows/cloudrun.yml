@@ -27,7 +27,7 @@ jobs:
 
       - name: Build and push container
         run: |-
-          gcloud builds submit \
+          gcloud builds submit apps/cloudrun \
             --tag gcr.io/$PROJECT_ID/$SERVICE_NAME
 
       - name: Deploy to Cloud Run
