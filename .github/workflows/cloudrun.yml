@@ -2,10 +2,9 @@ name: Deploy to Cloud Run
 
 on:
   push:
-    push:
-      branches:
-        - main
-        - init-project    branches:
+    branches:
+      - main
+      - init-project
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -30,7 +29,8 @@ jobs:
       - name: Build and push container
         run: |-
           gcloud builds submit apps/cloudrun \
-            --tag gcr.io/$PROJECT_ID/$SERVICE_NAME
+            --tag gcr.io/$PROJECT_ID/$SERVICE_NAME \
+            --quiet
 
       - name: Deploy to Cloud Run
         run: |-
