@@ -1,6 +1,10 @@
 from flask import Flask
+from flask_cors import CORS
 
 app = Flask(__name__)
+
+# CORSを有効化
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/')
 def hello_world():
