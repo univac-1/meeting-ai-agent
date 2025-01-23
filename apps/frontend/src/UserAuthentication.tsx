@@ -1,9 +1,13 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // 追加
+import { useNavigate, useLocation } from "react-router-dom"; // useLocationを追加
 
 const UserAuthentication = () => {
+  const location = useLocation(); // useLocationを使用してクエリパラメータを取得
+  const queryParams = new URLSearchParams(location.search);
+  const meetingID = queryParams.get("meetingID"); // クエリパラメータからミーティングIDを取得
+
   const [appID, setAppID] = useState("");
-  const [channelName, setChannelName] = useState("");
+  const [channelName, setChannelName] = useState(meetingID || ""); // ミーティングIDがあればそれを使用
   const [token, setToken] = useState("");
   const navigate = useNavigate(); // 追加
 
