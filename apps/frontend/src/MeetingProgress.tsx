@@ -9,13 +9,13 @@ import {
   useRemoteUsers,
 } from "agora-rtc-react";
 import { useState } from "react";
-import { useLocation } from "react-router-dom"; // 追加
+import { useLocation } from "react-router-dom";
 
 import "./index.css";
 
 const MeetingProgress = () => {
-  const location = useLocation(); // 追加
-  const { appID, channelName, token } = location.state || {}; // 追加
+  const location = useLocation();
+  const { appID, channelName, token } = location.state || {};
 
   const [calling, setCalling] = useState(false);
   const isConnected = useIsConnected();
@@ -67,45 +67,53 @@ const MeetingProgress = () => {
             ))}
           </div>
         ) : (
-          <div className="join-form">
-            <h2>Join Video Call</h2>
+          <div className="join-room">
+            {/* <img alt="agora-logo" className="logo" src={logo} /> */}
             <input
-              type="text"
-              placeholder="App ID"
-              value={appId}
               onChange={(e) => setAppId(e.target.value)}
+              placeholder="<Your app ID>"
+              value={appId}
             />
             <input
-              type="text"
-              placeholder="Channel Name"
-              value={channel}
               onChange={(e) => setChannel(e.target.value)}
+              placeholder="<Your channel Name>"
+              value={channel}
             />
             <input
-              type="text"
-              placeholder="Token (optional)"
-              value={tokenValue}
               onChange={(e) => setToken(e.target.value)}
+              placeholder="<Your token>"
+              value={token}
             />
+
             <button
-              onClick={() => setCalling(true)}
+              className={`join-channel ${!appId || !channel ? "disabled" : ""}`}
               disabled={!appId || !channel}
+              onClick={() => setCalling(true)}
             >
-              Join Channel
+              <span>Join Channel</span>
             </button>
           </div>
         )}
       </div>
       {isConnected && (
-        <div className="controls">
-          <button onClick={() => setMic((a) => !a)}>
-            {micOn ? "Turn Off Mic" : "Turn On Mic"}
-          </button>
-          <button onClick={() => setCamera((a) => !a)}>
-            {cameraOn ? "Turn Off Camera" : "Turn On Camera"}
-          </button>
-          <button onClick={() => setCalling((a) => !a)}>
-            {calling ? "End Call" : "Start Call"}
+        <div className="control">
+          <div className="left-control">
+            <button className="btn" onClick={() => setMic((a) => !a)}>
+              <i className={`i-microphone ${!micOn ? "off" : ""}`} />
+            </button>
+            <button className="btn" onClick={() => setCamera((a) => !a)}>
+              <i className={`i-camera ${!cameraOn ? "off" : ""}`} />
+            </button>
+          </div>
+          <button
+            className={`btn btn-phone ${calling ? "btn-phone-active" : ""}`}
+            onClick={() => setCalling((a) => !a)}
+          >
+            {calling ? (
+              <i className="i-phone-hangup" />
+            ) : (
+              <i className="i-mdi-phone" />
+            )}
           </button>
         </div>
       )}
