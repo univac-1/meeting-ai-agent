@@ -20,7 +20,7 @@ const App = () => {
           }
         />
         <Route path="/auth" element={<UserAuthentication />} />
-        <Route path="/progress" element={<MeetingProgress />} />
+        <Route path="/meeting-progress" element={<MeetingProgress />} />
       </Routes>
     </Router>
   );
