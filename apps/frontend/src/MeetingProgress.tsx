@@ -1,3 +1,5 @@
+import 'core-js/stable';
+import 'regenerator-runtime/runtime';
 import {
   LocalUser,
   RemoteUser,
@@ -8,8 +10,10 @@ import {
   usePublish,
   useRemoteUsers,
 } from "agora-rtc-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
+import axios from 'axios';
 
 import "./index.css";
 
@@ -38,6 +42,46 @@ const MeetingProgress = () => {
   usePublish([localMicrophoneTrack, localCameraTrack]);
   //remote users
   const remoteUsers = useRemoteUsers();
+
+  const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition
+  } = useSpeechRecognition();
+
+  useEffect(() => {
+    if (!browserSupportsSpeechRecognition) return;
+
+    if (isConnected) {
+      if (micOn && !listening) {
+        SpeechRecognition.startListening();
+      } else if (!micOn && listening) {
+        SpeechRecognition.stopListening();
+      }
+    } else if (listening) {
+      SpeechRecognition.stopListening();
+    }
+  }, [isConnected, micOn, listening, browserSupportsSpeechRecognition]);
+
+  useEffect(() => {
+    if (isConnected && !listening && micOn && transcript) {
+      console.log(transcript);
+      console.log("==== 区切り ====");
+      axios.post('https://jsonplaceholder.typicode.com/posts', {
+        title: 'Speech Transcript',
+        body: `「${transcript}」`,
+        userId: 1,
+      }, {
+        headers: {
+          'Content-type': 'application/json; charset=UTF-8',
+        },
+      })
+        .then((response) => console.log(response.data))
+        .catch((error) => console.error('Error:', error));
+      resetTranscript();
+    }
+  }, [isConnected, listening, micOn, transcript, resetTranscript]);
 
   return (
     <>
