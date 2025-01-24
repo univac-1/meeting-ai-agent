@@ -1,6 +1,8 @@
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+
 import {
   LocalUser,
   RemoteUser,
@@ -34,15 +36,25 @@ import SpeechRecognition, {
 import axios from "axios";
 import "./index.css";
 
+const APP_ID = "dfd31dd0fc764a25b5bba0bbac2d5ef6";
+
 export const MeetingApp = () => {
   const [calling, setCalling] = useState(false);
   const isConnected = useIsConnected();
-  const [appId, setAppId] = useState("dfd31dd0fc764a25b5bba0bbac2d5ef6");
   const [channel, setChannel] = useState("");
-  const [token, setToken] = useState("");
   const [uid, setUid] = useState("");
 
-  useJoin({ appid: appId, channel, uid: uid, token: token || null }, calling);
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const meetingId = queryParams.get("meeting-id");
+
+  useEffect(() => {
+    if (meetingId) {
+      setChannel(meetingId);
+    }
+  }, [meetingId]);
+
+  useJoin({ appid: APP_ID, channel, uid: uid, token: null }, calling);
 
   const [micOn, setMic] = useState(true);
   const [cameraOn, setCamera] = useState(true);
@@ -144,14 +156,6 @@ export const MeetingApp = () => {
               Join Video Call
             </Typography>
             <TextField
-              label="App ID"
-              value={appId}
-              onChange={(e) => setAppId(e.target.value)}
-              fullWidth
-              variant="outlined"
-              size="small"
-            />
-            <TextField
               label="Channel Name"
               value={channel}
               onChange={(e) => setChannel(e.target.value)}
@@ -170,19 +174,11 @@ export const MeetingApp = () => {
               variant="outlined"
               size="small"
             />
-            <TextField
-              label="Token (optional)"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              fullWidth
-              variant="outlined"
-              size="small"
-            />
             <Button
               variant="contained"
               endIcon={<ArrowForward />}
               onClick={() => setCalling(true)}
-              disabled={!appId || !channel || !uid}
+              disabled={!APP_ID || !channel || !uid}
               fullWidth
               sx={{ mt: 2 }}
             >
