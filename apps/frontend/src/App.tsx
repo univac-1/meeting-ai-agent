@@ -158,7 +158,10 @@ export const Basics = () => {
             <TextField
               label="User Name"
               value={uid}
-              onChange={(e) => setUid(e.target.value)}
+              onChange={(e) => {
+                const newValue = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
+                setUid(newValue);
+              }}
               fullWidth
               variant="outlined"
               size="small"
