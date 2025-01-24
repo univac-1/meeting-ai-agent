@@ -10,7 +10,7 @@ const Home = () => {
       <Button variant="contained" onClick={() => navigate("/setup")}>
         会議の初期設定画面
       </Button>
-      <Button variant="contained" onClick={() => navigate("/join")}>
+      <Button variant="contained" onClick={() => navigate("/meeting")}>
         会議参加画面
       </Button>
     </div>
