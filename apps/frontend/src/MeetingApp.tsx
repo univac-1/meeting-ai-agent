@@ -152,7 +152,7 @@ export const MeetingApp = () => {
               boxShadow: 3,
             }}
           >
-            <Typography variant="h5" component="h2" gutterBottom>
+            <Typography variant="h5" component="h2" gutterBottom color="black">
               Join Video Call
             </Typography>
             <TextField
