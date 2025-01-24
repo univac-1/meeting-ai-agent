@@ -32,8 +32,8 @@ import "./index.css";
 export const Basics = () => {
   const [calling, setCalling] = useState(false);
   const isConnected = useIsConnected();
-  const [appId, setAppId] = useState("178d62e642c241ddb0415fc2c1472337");
-  const [channel, setChannel] = useState("test");
+  const [appId, setAppId] = useState("dfd31dd0fc764a25b5bba0bbac2d5ef6");
+  const [channel, setChannel] = useState("");
   const [token, setToken] = useState("");
 
   useJoin(
