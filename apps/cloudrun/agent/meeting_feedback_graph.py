@@ -11,7 +11,7 @@ from pydantic import BaseModel
 # 入力データの型定義
 class MeetingInput(BaseModel):
     purpose: str
-    agenda: list[str]
+    agenda: list[str] | None = None
     participants: list[str]
     conversation_history: list[dict]
 
@@ -30,6 +30,46 @@ def get_llm():
     if not api_key:
         raise ValueError("GEMINI_API_KEY environment variable is not set")
     return ChatGoogleGenerativeAI(model="gemini-pro", google_api_key=api_key)
+
+# アジェンダ生成ノード
+def create_agenda_node():
+    prompt = ChatPromptTemplate.from_messages([
+        ("human", """あなたは会議のファシリテーターとして、以下の会議の目的に基づいて効果的なアジェンダを作成してください。
+
+会議の目的: {purpose}
+参加者: {participants}
+
+アジェンダは以下の点を考慮して作成してください：
+1. 会議の目的を達成するために必要なステップ
+2. 参加者全員が効果的に議論に参加できる構成
+3. 時間配分を考慮した現実的な項目数（3-5項目程度）
+4. 具体的な成果物や決定事項の明確化
+
+以下の形式で箇条書きのリストとして提案してください：
+- [アジェンダ項目1]
+- [アジェンダ項目2]
+- [アジェンダ項目3]
+...
+
+各アジェンダ項目は、具体的なアクションや目標を示す短い文章にしてください。""")
+    ])
+    
+    model = get_llm()
+    
+    def generate_agenda(state: GraphState) -> GraphState:
+        messages = prompt.format_messages(
+            purpose=state["purpose"],
+            participants=state["participants"]
+        )
+        response = model.invoke(messages)
+        # 応答からアジェンダのリストを抽出（'-'で始まる行のみを抽出）
+        agenda_items = [item.strip('- ') for item in response.content.split('\n') if item.strip().startswith('-')]
+        if not agenda_items:  # 箇条書きでない場合は行ごとに分割して最初の3-5行を使用
+            agenda_items = [item.strip() for item in response.content.split('\n') if item.strip()][:5]
+        state["agenda"] = agenda_items
+        return state
+    
+    return generate_agenda
 
 # 会議評価ノード
 def create_evaluation_node():
@@ -102,11 +142,31 @@ def create_meeting_feedback_graph():
     workflow = StateGraph(GraphState)
     
     # ノードの追加
+    workflow.add_node("generate_agenda", create_agenda_node())
     workflow.add_node("evaluate", create_evaluation_node())
     workflow.add_node("improve", create_improvement_node())
     
+    # 条件付きエッジの設定
+    def should_generate_agenda(state: GraphState) -> Dict[str, str]:
+        # アジェンダが空または未設定の場合はアジェンダ生成ノードへ
+        if not state.get("agenda"):
+            return {"next": "generate_agenda"}
+        return {"next": "evaluate"}
+    
     # エッジの設定
-    workflow.set_entry_point("evaluate")  # 開始ノードを設定
+    workflow.add_node("router", should_generate_agenda)  # 条件分岐ノードを追加
+    workflow.set_entry_point("router")  # エントリーポイントを設定
+    
+    # ルーティングの設定
+    workflow.add_conditional_edges(
+        "router",
+        lambda x: x["next"],
+        {
+            "generate_agenda": "generate_agenda",
+            "evaluate": "evaluate"
+        }
+    )
+    workflow.add_edge("generate_agenda", "evaluate")
     workflow.add_edge("evaluate", "improve")
     workflow.add_edge("improve", END)
     
@@ -120,7 +180,7 @@ def process_meeting_feedback(meeting_input: MeetingInput) -> Dict:
     # 初期状態の設定
     initial_state = GraphState(
         purpose=meeting_input.purpose,
-        agenda=meeting_input.agenda,
+        agenda=meeting_input.agenda or [],  # Noneの場合は空リストを設定
         participants=meeting_input.participants,
         conversation_history=meeting_input.conversation_history,
         evaluation=None,
@@ -131,6 +191,7 @@ def process_meeting_feedback(meeting_input: MeetingInput) -> Dict:
     result = graph.invoke(initial_state)
     
     return {
+        "agenda": result["agenda"],  # 生成されたアジェンダを含める
         "summary": result["evaluation"],
         "evaluation": result["evaluation"],
         "improvements": result["improvement"]
