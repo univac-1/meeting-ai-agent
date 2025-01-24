@@ -1,3 +1,6 @@
+import 'core-js/stable';
+import 'regenerator-runtime/runtime';
+import { useState, useEffect } from "react";
 import {
   LocalUser,
   RemoteUser,
@@ -8,7 +11,6 @@ import {
   usePublish,
   useRemoteUsers,
 } from "agora-rtc-react";
-import { useState } from "react";
 import {
   Button,
   TextField,
@@ -26,7 +28,8 @@ import {
   CallEnd,
   ArrowForward,
 } from "@mui/icons-material";
-
+import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
+import axios from 'axios';
 import "./index.css";
 
 export const Basics = () => {
@@ -35,20 +38,63 @@ export const Basics = () => {
   const [appId, setAppId] = useState("dfd31dd0fc764a25b5bba0bbac2d5ef6");
   const [channel, setChannel] = useState("");
   const [token, setToken] = useState("");
+  const [uid, setUid] = useState("");
 
-  useJoin(
-    { appid: appId, channel: channel, token: token ? token : null },
-    calling
-  );
+  useJoin({ appid: appId, channel, uid: uid, token: token || null}, calling);
 
-  //local user
   const [micOn, setMic] = useState(true);
   const [cameraOn, setCamera] = useState(true);
   const { localMicrophoneTrack } = useLocalMicrophoneTrack(micOn);
   const { localCameraTrack } = useLocalCameraTrack(cameraOn);
   usePublish([localMicrophoneTrack, localCameraTrack]);
-  //remote users
+
   const remoteUsers = useRemoteUsers();
+
+  const {
+    transcript,
+    listening,
+    browserSupportsSpeechRecognition
+  } = useSpeechRecognition();
+
+  useEffect(() => {
+    if (isConnected) {
+      if (micOn) {
+        if (!listening) {
+          SpeechRecognition.startListening();
+        }
+      } else {
+        if (listening) {
+          SpeechRecognition.stopListening();
+        }
+      }
+    } else {
+      if (listening) {
+        SpeechRecognition.stopListening();
+      }
+    }
+  }, [listening, browserSupportsSpeechRecognition, micOn, isConnected]);
+
+  useEffect(() => {
+    if (isConnected && !listening && micOn && transcript) {
+      console.log(transcript);
+      console.log("==== 区切り ====");
+      axios.post('https://jsonplaceholder.typicode.com/posts', {
+        title: 'Speech Transcript',
+        body: `${uid}「${transcript}」`,
+        userId: 1,
+      }, {
+        headers: {
+          'Content-type': 'application/json; charset=UTF-8',
+        },
+      })
+        .then((response) => console.log(response.data))
+        .catch((error) => console.error('Error:', error));
+    }
+  }, [listening, micOn, isConnected]);
+
+  if (!browserSupportsSpeechRecognition) {
+    return <span>Browser doesn't support speech recognition.</span>;
+  }
 
   return (
     <>
@@ -63,7 +109,7 @@ export const Basics = () => {
                 videoTrack={localCameraTrack}
                 cover="https://www.agora.io/en/wp-content/uploads/2022/10/3d-spatial-audio-icon.svg"
               >
-                <samp className="user-name">You</samp>
+                <samp className="user-name">{uid} (You)</samp>
               </LocalUser>
             </div>
             {remoteUsers.map((user) => (
@@ -110,6 +156,14 @@ export const Basics = () => {
               size="small"
             />
             <TextField
+              label="User Name"
+              value={uid}
+              onChange={(e) => setUid(e.target.value)}
+              fullWidth
+              variant="outlined"
+              size="small"
+            />
+            <TextField
               label="Token (optional)"
               value={token}
               onChange={(e) => setToken(e.target.value)}
@@ -121,7 +175,7 @@ export const Basics = () => {
               variant="contained"
               endIcon={<ArrowForward />}
               onClick={() => setCalling(true)}
-              disabled={!appId || !channel}
+              disabled={!appId || !channel || !uid}
               fullWidth
               sx={{ mt: 2 }}
             >
