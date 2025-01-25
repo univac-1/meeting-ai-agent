@@ -13,23 +13,26 @@ class MeetingInput(BaseModel):
     purpose: str
     agenda: list[str] | None = None
     participants: list[str]
-    conversation_history: list[dict]
+    comment_history: list[dict]
 
 # 状態の型定義
 class GraphState(TypedDict):
     purpose: str
     agenda: list[str]
     participants: list[str]
-    conversation_history: list[dict]
+    comment_history: list[dict]
+    summary: str | None
     evaluation: str | None
     improvement: str | None
 
 def get_llm():
-    """環境変数からAPI Keyを取得してLLMを初期化"""
+    """環境変数からAPI KeyとモデルIDを取得してLLMを初期化"""
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise ValueError("GEMINI_API_KEY environment variable is not set")
-    return ChatGoogleGenerativeAI(model="gemini-pro", google_api_key=api_key)
+    
+    model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")  # デフォルトはgemini-1.5-flash
+    return ChatGoogleGenerativeAI(model=model_name, google_api_key=api_key)
 
 # アジェンダ生成ノード
 def create_agenda_node():
@@ -71,6 +74,40 @@ def create_agenda_node():
     
     return generate_agenda
 
+# 会議要約ノード
+def create_summary_node():
+    prompt = ChatPromptTemplate.from_messages([
+        ("human", """あなたは会議の内容を簡潔に要約する専門家として、以下の情報をもとに会議の内容を要約してください。
+
+要約のポイント：
+1. 議論された主要なトピック
+2. 参加者から出された重要な意見
+3. 決定事項や合意点
+4. 未解決の課題
+
+200字程度で簡潔にまとめてください。
+
+会議の目的: {purpose}
+アジェンダ: {agenda}
+参加者: {participants}
+コメント履歴: {conversation_history}""")
+    ])
+    
+    model = get_llm()
+    
+    def summarize(state: GraphState) -> GraphState:
+        messages = prompt.format_messages(
+            purpose=state["purpose"],
+            agenda=state["agenda"],
+            participants=state["participants"],
+            conversation_history=state["comment_history"]
+        )
+        response = model.invoke(messages)
+        state["summary"] = response.content
+        return state
+    
+    return summarize
+
 # 会議評価ノード
 def create_evaluation_node():
     prompt = ChatPromptTemplate.from_messages([
@@ -87,7 +124,7 @@ def create_evaluation_node():
 会議の目的: {purpose}
 アジェンダ: {agenda}
 参加者: {participants}
-会議の発話履歴: {conversation_history}""")
+コメント履歴: {conversation_history}""")
     ])
     
     model = get_llm()
@@ -97,7 +134,7 @@ def create_evaluation_node():
             purpose=state["purpose"],
             agenda=state["agenda"],
             participants=state["participants"],
-            conversation_history=state["conversation_history"]
+            conversation_history=state["comment_history"]
         )
         response = model.invoke(messages)
         state["evaluation"] = response.content
@@ -143,6 +180,7 @@ def create_meeting_feedback_graph():
     
     # ノードの追加
     workflow.add_node("generate_agenda", create_agenda_node())
+    workflow.add_node("summarize", create_summary_node())
     workflow.add_node("evaluate", create_evaluation_node())
     workflow.add_node("improve", create_improvement_node())
     
@@ -151,7 +189,7 @@ def create_meeting_feedback_graph():
         # アジェンダが空または未設定の場合はアジェンダ生成ノードへ
         if not state.get("agenda"):
             return {"next": "generate_agenda"}
-        return {"next": "evaluate"}
+        return {"next": "summarize"}
     
     # エッジの設定
     workflow.add_node("router", should_generate_agenda)  # 条件分岐ノードを追加
@@ -163,10 +201,12 @@ def create_meeting_feedback_graph():
         lambda x: x["next"],
         {
             "generate_agenda": "generate_agenda",
-            "evaluate": "evaluate"
+            "summarize": "summarize"
         }
     )
-    workflow.add_edge("generate_agenda", "evaluate")
+    # アジェンダ生成後はそこで終了、それ以外は通常のフローへ
+    workflow.add_edge("generate_agenda", END)
+    workflow.add_edge("summarize", "evaluate")
     workflow.add_edge("evaluate", "improve")
     workflow.add_edge("improve", END)
     
@@ -182,7 +222,8 @@ def process_meeting_feedback(meeting_input: MeetingInput) -> Dict:
         purpose=meeting_input.purpose,
         agenda=meeting_input.agenda or [],  # Noneの場合は空リストを設定
         participants=meeting_input.participants,
-        conversation_history=meeting_input.conversation_history,
+        comment_history=meeting_input.comment_history,
+        summary=None,
         evaluation=None,
         improvement=None
     )
@@ -190,9 +231,16 @@ def process_meeting_feedback(meeting_input: MeetingInput) -> Dict:
     # グラフの実行
     result = graph.invoke(initial_state)
     
+    # アジェンダ生成の場合は、アジェンダのみを返す
+    if not meeting_input.agenda:
+        return {
+            "agenda": result["agenda"]
+        }
+    
+    # 通常のフィードバックの場合は全ての情報を返す
     return {
-        "agenda": result["agenda"],  # 生成されたアジェンダを含める
-        "summary": result["evaluation"],
+        "agenda": result["agenda"],
+        "summary": result["summary"],
         "evaluation": result["evaluation"],
         "improvements": result["improvement"]
     } 
