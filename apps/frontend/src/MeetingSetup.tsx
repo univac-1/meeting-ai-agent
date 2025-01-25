@@ -25,7 +25,7 @@ const MeetingSetup = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          meetingName,
+          meeting_name: meetingName,
           participants,
           agenda,
         }),
