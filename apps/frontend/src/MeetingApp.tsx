@@ -97,11 +97,11 @@ export const MeetingApp = () => {
     }
   }, [listening, browserSupportsSpeechRecognition, micOn, isConnected]);
 
+  // 会議参加後、マイクオンで発言するたびに、発言内容をAPIに送信する
   useEffect(() => {
     if (isConnected && !listening && micOn && transcript) {
       console.log(transcript);
       console.log("==== 区切り ====");
-      speak(transcript);
       axios
         .post(
           "https://jsonplaceholder.typicode.com/posts",
@@ -120,6 +120,30 @@ export const MeetingApp = () => {
         .catch((error) => console.error("Error:", error));
     }
   }, [listening, micOn, isConnected]);
+
+  // AI Agentボタンクリック時の処理
+  const handleAIAgentClick = () => {
+    console.log("AI AGENT button clicked");
+    // ダミーのAPI呼び出し
+    axios
+    .post(
+      "https://jsonplaceholder.typicode.com/posts",
+      {
+        title: "Call AI Agent function",
+        body: "Call AI Agent function",
+        userId: 1,
+      },
+      {
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+        },
+      }
+    )
+    .then((response) => console.log(response.data))
+    .catch((error) => console.error("Error:", error));
+    // 音声合成する場合
+    // speak("AI Agentを呼び出します");
+  };
 
   if (!browserSupportsSpeechRecognition) {
     return <span>Browser doesn't support speech recognition.</span>;
@@ -235,6 +259,14 @@ export const MeetingApp = () => {
             sx={{ px: 4 }}
           >
             {calling ? "End Call" : "Start Call"}
+          </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={handleAIAgentClick}
+            sx={{ px: 4 }}
+          >
+            AI AGENT
           </Button>
         </Stack>
       )}
