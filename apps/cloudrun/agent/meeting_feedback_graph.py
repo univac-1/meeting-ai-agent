@@ -20,6 +20,8 @@ class GraphState(TypedDict):
     agenda: List[str]
     participants: List[str]
     comment_history: List[Dict]
+    comment: Optional[str]
+    detail: Optional[Dict[str, str]]
     summary: Optional[str]
     evaluation: Optional[str]
     improvement: Optional[str]
@@ -50,7 +52,6 @@ def create_agenda_node():
 4. 具体的な成果物や決定事項の明確化"""
     
     model = init_gemini(system_prompt)
-    print("before generate_agenda")
     
     def generate_agenda(state: GraphState) -> GraphState:
         prompt = {
@@ -58,7 +59,6 @@ def create_agenda_node():
             "participants": state["participants"]
         }
 
-        print(prompt)
         response = model.generate_content(
             str(prompt),
             generation_config=genai.GenerationConfig(
@@ -68,7 +68,6 @@ def create_agenda_node():
                 response_schema=AgendaResponse
             )
         )
-        print(response.text)
 
         try:
             result = json.loads(response.text)
@@ -200,6 +199,40 @@ def create_improvement_node():
     
     return improve
 
+def create_comment_node():
+    system_prompt = """あなたは会議全体を一言で総括するエキスパートです。
+評価と改善案を踏まえて、会議の状況を端的に表現してください。
+コメントは1-2文程度の簡潔なものにしてください。"""
+    
+    model = init_gemini(system_prompt)
+    
+    def comment(state: GraphState) -> GraphState:
+        prompt = {
+            "evaluation": state["evaluation"],
+            "improvement": state["improvement"]
+        }
+
+        response = model.generate_content(
+            str(prompt),
+            generation_config=genai.GenerationConfig(
+                temperature=0.3,
+                candidate_count=1,
+                response_mime_type="application/json",
+                response_schema=CommentResponse
+            )
+        )
+
+        try:
+            result = json.loads(response.text)
+            state["comment"] = result["comment"]
+            return state
+        except Exception as e:
+            print(f"Error processing comment: {e}")
+            state["comment"] = ""
+            return state
+    
+    return comment
+
 def create_meeting_feedback_graph():
     # グラフの作成
     workflow = StateGraph(GraphState)
@@ -209,6 +242,7 @@ def create_meeting_feedback_graph():
     workflow.add_node("summarize", create_summary_node())
     workflow.add_node("evaluate", create_evaluation_node())
     workflow.add_node("improve", create_improvement_node())
+    workflow.add_node("generate_comment", create_comment_node())
     
     # 条件付きエッジの設定
     def should_generate_agenda(state: GraphState) -> Dict[str, str]:
@@ -234,7 +268,8 @@ def create_meeting_feedback_graph():
     workflow.add_edge("generate_agenda", END)
     workflow.add_edge("summarize", "evaluate")
     workflow.add_edge("evaluate", "improve")
-    workflow.add_edge("improve", END)
+    workflow.add_edge("improve", "generate_comment")
+    workflow.add_edge("generate_comment", END)
     
     # 実行可能なグラフの取得
     return workflow.compile()
@@ -249,6 +284,8 @@ def process_meeting_feedback(meeting_input: MeetingInput) -> Dict:
         agenda=meeting_input.agenda or [],
         participants=meeting_input.participants,
         comment_history=meeting_input.comment_history,
+        comment=None,
+        detail=None,
         summary=None,
         evaluation=None,
         improvement=None
@@ -263,12 +300,15 @@ def process_meeting_feedback(meeting_input: MeetingInput) -> Dict:
             "agenda": result["agenda"]
         }
     
-    # 通常のフィードバックの場合は全ての情報を返す
+    # 通常のフィードバックの場合は新しい構造で返す
     return {
-        "agenda": result["agenda"],
-        "summary": result["summary"],
-        "evaluation": result["evaluation"],
-        "improvements": result["improvement"]
+        "comment": result["comment"],
+        "detail": {
+            "summary": result["summary"],
+            "evaluation": result["evaluation"],
+            "improvement": result["improvement"]
+        },
+        "agenda": result["agenda"]
     }
 
 class AgendaResponse(TypedDict):
@@ -281,4 +321,12 @@ class EvaluationResponse(TypedDict):
     evaluation: str
 
 class ImprovementResponse(TypedDict):
-    improvements: str 
+    improvements: str
+
+class CommentResponse(TypedDict):
+    comment: str
+
+class DetailResponse(TypedDict):
+    summary: str
+    evaluation: str
+    improvement: str 

@@ -1,4 +1,5 @@
 from meeting_feedback_graph import process_meeting_feedback, MeetingInput
+import json
 
 def _test_with_agenda():
     """既存のアジェンダがある場合のテスト"""
@@ -20,20 +21,8 @@ def _test_with_agenda():
     
     print("\n=== アジェンダありのケース ===")
     result = process_meeting_feedback(test_data)
-    print("=== 既存のアジェンダ ===")
-    print("\n".join(f"- {item}" for item in result["agenda"]))
-    
-    if "summary" in result:
-        print("\n=== 会議の要約 ===")
-        print(result["summary"])
-    
-    if "evaluation" in result:
-        print("\n=== 会議の評価 ===")
-        print(result["evaluation"])
-    
-    if "improvements" in result:
-        print("\n=== 改善提案 ===")
-        print(result["improvements"])
+    print("\n=== 結果 ===")
+    print(json.dumps(result, ensure_ascii=False, indent=2))
 
 def _test_without_agenda():
     """アジェンダがない場合のテスト"""
@@ -54,10 +43,9 @@ def _test_without_agenda():
     print("参加者:", ", ".join(test_data.participants))
     
     result = process_meeting_feedback(test_data)
-    if "agenda" in result:
-        print("\n=== 生成されたアジェンダ ===")
-        print("\n".join(f"- {item}" for item in result["agenda"]))
+    print("\n=== 結果 ===")
+    print(json.dumps(result, ensure_ascii=False, indent=2))
 
 if __name__ == "__main__":
-    # _test_with_agenda()
-    _test_without_agenda()
+    _test_with_agenda()
+    # _test_without_agenda()
