@@ -56,7 +56,7 @@ export const MeetingApp = () => {
 
   const speak = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.voice = voices.find(voice => voice.lang === 'ja-JP') || null;
+    utterance.voice = voices.find((voice) => voice.lang === "ja-JP") || null;
     window.speechSynthesis.speak(utterance);
   };
 
@@ -126,23 +126,23 @@ export const MeetingApp = () => {
     console.log("AI AGENT button clicked");
     // ダミーのAPI呼び出し
     axios
-    .post(
-      "https://jsonplaceholder.typicode.com/posts",
-      {
-        title: "Call AI Agent function",
-        body: "Call AI Agent function",
-        userId: 1,
-      },
-      {
-        headers: {
-          "Content-type": "application/json; charset=UTF-8",
+      .post(
+        "https://jsonplaceholder.typicode.com/posts",
+        {
+          title: "Call AI Agent function",
+          body: "Call AI Agent function",
+          userId: 1,
         },
-      }
-    )
-    .then((response) => console.log(response.data))
-    .catch((error) => console.error("Error:", error));
+        {
+          headers: {
+            "Content-type": "application/json; charset=UTF-8",
+          },
+        }
+      )
+      .then((response) => console.log(response.data))
+      .catch((error) => console.error("Error:", error));
     // 音声合成する場合
-    // speak("AI Agentを呼び出します");
+    speak("AI Agentを呼び出します");
   };
 
   if (!browserSupportsSpeechRecognition) {
