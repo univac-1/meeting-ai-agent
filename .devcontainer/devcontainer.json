@@ -1,6 +1,9 @@
 {
     "name": "Python Development",
     "image": "mcr.microsoft.com/devcontainers/python:3.11",
+    "appPort": [
+        "80:8080"
+    ],
     "customizations": {
         "vscode": {
             "extensions": [
@@ -19,5 +22,5 @@
     },
     "workspaceFolder": "/workspace",
     "workspaceMount": "source=${localWorkspaceFolder}/apps,target=/workspace,type=bind",
-    "postCreateCommand": "pip install -r cloudrun/requirements.txt && curl -L https://cursor.sh/install.sh | sh"
+    "postCreateCommand": "pip install -r cloudrun/requirements.txt"
 } 
