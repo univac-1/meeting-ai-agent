@@ -4,13 +4,8 @@ from typing import Dict
 from agent.conversation import handle_conversation
 from agent.meeting_feedback_graph import process_meeting_feedback, MeetingInput
 from flask_cors import CORS
-import google.cloud.firestore
 
-from meeting import create_meeting
-
-
-dbname = "ai-agent-cfs"
-db = google.cloud.firestore.Client(database=dbname)  # Initialize Firestore client
+from meeting.meeting import create_meeting
 
 app = Flask(__name__)
 app.json.ensure_ascii = False
@@ -21,21 +16,19 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 @app.route('/')
 def hello_world():
     return 'Hello Cloud Run!'
-    
-@app.route('/data', methods=['POST', 'GET'])
-def add_data():
-    data = {
-        'name': 'Tokyo',
-        'country': 'Japan',
-        'population': 37400068
-    }
-    db.collection('city_person').add(data)
-    return jsonify({'message': 'Data added successfully!'}), 201
 
-@app.route('/meeting', methods=["GET", "POST"])
+
+@app.route('/meeting', methods=["POST"])
 def meeting():
-    meeting_id = create_meeting()
-    return jsonify({"data":{"meeting_id": meeting_id}}), 200
+    data = request.get_json()  # リクエストからデータを取得
+    meeting_name = data.get("meeting_name")
+    participants = data.get("participants")
+    agenda = data.get("agenda")
+
+    meeting_id = create_meeting(meeting_name, participants, agenda)
+
+    return jsonify({"data": {"meeting_id": meeting_id}}), 200
+
 
 
 @app.route("/meeting/<meeting_id>/agent-feedback", methods=["GET"])
