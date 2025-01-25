@@ -67,3 +67,15 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+# flask
+apps/cloudrun/.idea/
+apps/cloudrun/.vscode/
+apps/cloudrun/.venv*/
+apps/cloudrun/venv*/
+apps/cloudrun/__pycache__/
+apps/cloudrun/dist/
+apps/cloudrun/.coverage*
+apps/cloudrun/htmlcov/
+apps/cloudrun/.tox/
+apps/cloudrun/docs/_build/
