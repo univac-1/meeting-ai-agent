@@ -125,21 +125,8 @@ export const MeetingApp = () => {
   // AI Agentボタンクリック時の処理
   const handleAIAgentClick = () => {
     console.log("AI AGENT button clicked");
-    // ダミーのAPI呼び出し
     axios
-      .post(
-        "https://jsonplaceholder.typicode.com/posts",
-        {
-          title: "Call AI Agent function",
-          body: "Call AI Agent function",
-          userId: 1,
-        },
-        {
-          headers: {
-            "Content-type": "application/json; charset=UTF-8",
-          },
-        }
-      )
+      .get(`${CLOUD_RUN_ENDPOINT}/meeting/${channel}/agent-feedback`)
       .then((response) => console.log(response.data))
       .catch((error) => console.error("Error:", error));
     // 音声合成する場合
