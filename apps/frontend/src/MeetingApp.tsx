@@ -1,7 +1,7 @@
 import "core-js/stable";
 import "regenerator-runtime/runtime";
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 import {
   LocalUser,
@@ -43,10 +43,7 @@ export const MeetingApp = () => {
   const isConnected = useIsConnected();
   const [channel, setChannel] = useState("");
   const [uid, setUid] = useState("");
-
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const meetingId = queryParams.get("meeting-id");
+  const { meetingId } = useParams<{ meetingId: string }>();
 
   useEffect(() => {
     if (meetingId) {

@@ -11,8 +11,14 @@ const StyledPaper = styled(Paper)({
   textAlign: "center",
 });
 
-const MeetingURLConfirmation = () => {
-  const meetingURL = "http://example.com/meeting"; // 仮のURL
+interface MeetingURLConfirmationProps {
+  meetingId: string;
+}
+
+const MeetingURLConfirmation: React.FC<MeetingURLConfirmationProps> = ({
+  meetingId,
+}) => {
+  const meetingURL = `https://ai-agent-hackthon-with-goole.web.app/meeting/${meetingId}`;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(meetingURL);

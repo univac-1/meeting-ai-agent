@@ -15,29 +15,38 @@ const MeetingSetup = () => {
   const [participants, setParticipants] = useState("");
   const [agenda, setAgenda] = useState("");
   const [isMeetingCreated, setIsMeetingCreated] = useState(false);
+  const [meetingId, setMeetingId] = useState("");
+
   const handleSave = async () => {
     const response = await fetch(
-      "https://meeting-ai-agent-132459894103.asia-northeast1.run.app/",
+      "https://meeting-ai-agent-132459894103.asia-northeast1.run.app/meeting",
       {
-        method: "GET",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          meetingName,
+          meetingDate,
+          participants,
+          agenda,
+        }),
       }
     );
-
     if (response.ok) {
-      const data = await response;
-      console.log("Meeting ID:", data);
+      const data = await response.json();
+      console.log("Meeting ID:", data.data.meeting_id);
+      setMeetingId(data.data.meeting_id);
       setIsMeetingCreated(true);
     } else {
       console.error("Failed to create meeting");
     }
   };
+
   return (
     <Container maxWidth="sm">
       {isMeetingCreated ? (
-        <MeetingURLConfirmation />
+        <MeetingURLConfirmation meetingId={meetingId} />
       ) : (
         <Paper elevation={3} style={{ padding: "20px", marginTop: "20px" }}>
           <Typography variant="h4" gutterBottom>
