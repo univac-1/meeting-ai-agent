@@ -49,5 +49,5 @@ jobs:
             --region $REGION \
             --platform managed \
             --allow-unauthenticated \
-            --update-secrets=GEMINI_API_KEY=projects/$PROJECT_ID/secrets/GEMINI_API_KEY:latest \
+            --update-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest \
             --env-vars-file apps/cloudrun/.env.yml
