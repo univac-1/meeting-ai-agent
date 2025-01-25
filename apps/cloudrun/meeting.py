@@ -29,4 +29,4 @@ def create_meeting():
     #     }
     # })
 
-    return jsonify({"meeting_id": meeting_id}), 200
+    return jsonify({"data":{"meeting_id": meeting_id}}), 200
