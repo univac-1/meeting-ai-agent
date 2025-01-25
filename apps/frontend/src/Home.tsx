@@ -20,14 +20,6 @@ const Home = () => {
           >
             会議の初期設定画面
           </Button>
-          <Button
-            variant="contained"
-            color="secondary"
-            fullWidth
-            onClick={() => navigate("/meeting")}
-          >
-            会議参加画面
-          </Button>
         </Box>
       </Box>
     </Container>
