@@ -59,5 +59,5 @@ def _test_without_agenda():
         print("\n".join(f"- {item}" for item in result["agenda"]))
 
 if __name__ == "__main__":
-    _test_with_agenda()
-    _test_without_agenda() 
+    # _test_with_agenda()
+    _test_without_agenda()
