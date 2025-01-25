@@ -48,4 +48,6 @@ jobs:
             --image ${{ env.IMAGE }} \
             --region $REGION \
             --platform managed \
-            --allow-unauthenticated
+            --allow-unauthenticated \
+            --update-secrets=GEMINI_API_KEY=projects/$PROJECT_ID/secrets/GEMINI_API_KEY:latest \
+            --env-vars-file apps/cloudrun/.env.yml
