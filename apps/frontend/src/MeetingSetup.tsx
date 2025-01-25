@@ -8,7 +8,7 @@ import {
   Paper,
 } from "@mui/material";
 import MeetingURLConfirmation from "./MeetingURLConfirmation";
-
+import { CLOUD_RUN_ENDPOINT } from "./config";
 const MeetingSetup = () => {
   const [meetingName, setMeetingName] = useState("");
   const [participants, setParticipants] = useState("");
@@ -17,20 +17,17 @@ const MeetingSetup = () => {
   const [meetingId, setMeetingId] = useState("");
 
   const handleSave = async () => {
-    const response = await fetch(
-      "https://meeting-ai-agent-132459894103.asia-northeast1.run.app/meeting",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          meeting_name: meetingName,
-          participants,
-          agenda,
-        }),
-      }
-    );
+    const response = await fetch(`${CLOUD_RUN_ENDPOINT}/meeting`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        meeting_name: meetingName,
+        participants,
+        agenda,
+      }),
+    });
     if (response.ok) {
       const data = await response.json();
       console.log("Meeting ID:", data.data.meeting_id);
