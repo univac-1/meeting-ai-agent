@@ -4,15 +4,13 @@ from typing import Dict
 from agent.conversation import handle_conversation
 from agent.meeting_feedback_graph import process_meeting_feedback, MeetingInput
 from flask_cors import CORS
-import firebase_admin
-from firebase_admin import firestore
+import google.cloud.firestore
 
 from meeting import create_meeting
 
-# Application Default credentials are automatically created.
-firebase_admin.initialize_app()
-# Firestore クライアント
-db = firestore.client()
+
+dbname = "ai-agent-cfs"
+db = google.cloud.firestore.Client(database=dbname)  # Initialize Firestore client
 
 app = Flask(__name__)
 app.json.ensure_ascii = False
@@ -23,6 +21,16 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 @app.route('/')
 def hello_world():
     return 'Hello Cloud Run!'
+    
+@app.route('/data', methods=['POST', 'GET'])
+def add_data():
+    data = {
+        'name': 'Tokyo',
+        'country': 'Japan',
+        'population': 37400068
+    }
+    db.collection('city_person').add(data)
+    return jsonify({'message': 'Data added successfully!'}), 201
 
 @app.route('/meeting', methods=["GET", "POST"])
 def meeting():
