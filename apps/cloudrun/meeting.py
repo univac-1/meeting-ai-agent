@@ -7,4 +7,4 @@ def create_meeting():
 
     # TODO:DB保存
 
-    return jsonify({"data":{"meeting_id": meeting_id}}), 200
+    return meeting_id
