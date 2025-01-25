@@ -4,8 +4,15 @@ from typing import Dict
 from agent.conversation import handle_conversation
 from agent.meeting_feedback_graph import process_meeting_feedback, MeetingInput
 from flask_cors import CORS
+import firebase_admin
+from firebase_admin import firestore
 
 from meeting import create_meeting
+
+# Application Default credentials are automatically created.
+firebase_admin.initialize_app()
+# Firestore クライアント
+db = firestore.client()
 
 app = Flask(__name__)
 app.json.ensure_ascii = False
@@ -19,7 +26,9 @@ def hello_world():
 
 @app.route('/meeting', methods=["GET", "POST"])
 def meeting():
-    return create_meeting()
+    meeting_id = create_meeting()
+    return jsonify({"data":{"meeting_id": meeting_id}}), 200
+
 
 @app.route("/meeting/<meeting_id>/agent-feedback", methods=["GET"])
 def get_meeting_feedback(meeting_id: str) -> Dict:
