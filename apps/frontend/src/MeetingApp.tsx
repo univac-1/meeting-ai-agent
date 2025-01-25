@@ -44,6 +44,21 @@ export const MeetingApp = () => {
   const [channel, setChannel] = useState("");
   const [uid, setUid] = useState("");
   const { meetingId } = useParams<{ meetingId: string }>();
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  useEffect(() => {
+    const getVoices = () => {
+      setVoices(window.speechSynthesis.getVoices());
+    };
+    getVoices();
+    window.speechSynthesis.onvoiceschanged = getVoices;
+  }, []);
+
+  const speak = (text: string) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = voices.find(voice => voice.lang === 'ja-JP') || null;
+    window.speechSynthesis.speak(utterance);
+  };
 
   useEffect(() => {
     if (meetingId) {
@@ -86,6 +101,7 @@ export const MeetingApp = () => {
     if (isConnected && !listening && micOn && transcript) {
       console.log(transcript);
       console.log("==== 区切り ====");
+      speak(transcript);
       axios
         .post(
           "https://jsonplaceholder.typicode.com/posts",
