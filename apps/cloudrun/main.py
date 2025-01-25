@@ -17,6 +17,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 def hello_world():
     return 'Hello Cloud Run!'
 
+
 @app.route('/meeting', methods=["POST"])
 def meeting():
     data = request.get_json()  # リクエストからデータを取得
@@ -27,6 +28,7 @@ def meeting():
     meeting_id = create_meeting(meeting_name, participants, agenda)
 
     return jsonify({"data": {"meeting_id": meeting_id}}), 200
+
 
 
 @app.route("/meeting/<meeting_id>/agent-feedback", methods=["GET"])
