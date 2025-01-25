@@ -19,7 +19,13 @@ def hello_world():
 
 @app.route('/meeting', methods=["POST"])
 def meeting():
-    meeting_id = create_meeting()
+    data = request.get_json()  # リクエストからデータを取得
+    meeting_name = data.get("meeting_name")
+    participants = data.get("participants")
+    agenda = data.get("agenda")
+
+    meeting_id = create_meeting(meeting_name, participants, agenda)
+
     return jsonify({"data": {"meeting_id": meeting_id}}), 200
 
 
