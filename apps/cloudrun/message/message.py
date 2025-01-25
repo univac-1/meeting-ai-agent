@@ -20,3 +20,14 @@ def post_message(meeting_id, speaker, message):
     db_client.collection(MEETING_COLLECTION).document(meeting_id).collection(COMMENT_COLLECTION).add(data)
 
     return meeting_id
+
+def get_message_history(meeting_id):
+    """発言日時が古い方が先に来るように取得"""
+    comments_ref = db_client.collection(MEETING_COLLECTION).document(meeting_id).collection(COMMENT_COLLECTION)
+    comments = comments_ref.order_by("speak_at").get()
+
+    message_history = []
+    for comment in comments:
+        message_history.append(comment.to_dict())
+
+    return message_history
