@@ -11,7 +11,6 @@ import MeetingURLConfirmation from "./MeetingURLConfirmation";
 
 const MeetingSetup = () => {
   const [meetingName, setMeetingName] = useState("");
-  const [meetingDate, setMeetingDate] = useState("");
   const [participants, setParticipants] = useState("");
   const [agenda, setAgenda] = useState("");
   const [isMeetingCreated, setIsMeetingCreated] = useState(false);
@@ -27,7 +26,6 @@ const MeetingSetup = () => {
         },
         body: JSON.stringify({
           meetingName,
-          meetingDate,
           participants,
           agenda,
         }),
@@ -59,18 +57,6 @@ const MeetingSetup = () => {
                 label="会議名"
                 value={meetingName}
                 onChange={(e) => setMeetingName(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="会議の日時"
-                type="datetime-local"
-                value={meetingDate}
-                onChange={(e) => setMeetingDate(e.target.value)}
-                InputLabelProps={{
-                  shrink: true,
-                }}
               />
             </Grid>
             <Grid item xs={12}>
