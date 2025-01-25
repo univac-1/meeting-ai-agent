@@ -26,13 +26,11 @@ const MeetingURLConfirmation: React.FC<MeetingURLConfirmationProps> = ({
   };
 
   return (
-    <StyledContainer maxWidth="sm">
+    <StyledContainer maxWidth="md">
       <StyledPaper elevation={3}>
         <Typography variant="h4" gutterBottom>
           会議URLの確認画面
         </Typography>
-        <Typography variant="body1">会議名: 会議のタイトル</Typography>
-        <Typography variant="body1">会議の日時: 2025-01-24 10:00</Typography>
         <Typography variant="body1">
           会議URL: {meetingURL}
           <Button

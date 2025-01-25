@@ -1,5 +1,20 @@
 ## ローカル実行手順
 
+### Google Cloud認証情報の取得
+
+下記リンクを参考にユーザー認証情報を取得する  
+https://cloud.google.com/docs/authentication/set-up-adc-local-dev-environment?hl=ja
+
+### Dockerを使わず起動
+
+```bash
+cd apps/cloudrun
+.\venv\Scripts\activate
+pip install -r requirements.txt
+python .\main.py
+```
+
+### Dockerで起動
 1. **Dockerのインストール**: Dockerがインストールされていることを確認してください。インストールされていない場合は、[Dockerの公式サイト](https://www.docker.com/get-started)からインストールしてください。
 
 2. **Dockerイメージのビルド**: `apps/cloudrun`ディレクトリに移動し、Dockerイメージをビルドします。
