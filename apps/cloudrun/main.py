@@ -59,8 +59,9 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
     
     # MeetingInputを構築
     try:
+        # TODO フロントでは会議の目的が未実装のため、会議名を会議の目的としている
         meeting_input = MeetingInput(
-            purpose=meeting_data.get("purpose", "会議の目的"),
+            purpose=meeting_data.get("purpose", meeting_data.get("meeting_name")),
             agenda=meeting_data.get("agenda", []),
             participants=meeting_data.get("participants", []),
             comment_history=message_history if isinstance(message_history, list) else [message_history]
@@ -73,8 +74,27 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
     
     feedback = process_meeting_feedback(meeting_input)
 
-    # AIのフィードバックをDB保存する
-    post_message(meeting_id, feedback["speaker"], feedback["message"], feedback.get("detail"))
+    # AIのフィードバックを発言履歴用DBに保存する
+    post_message(meeting_id, Config.get_ai_facilitator_name(), feedback["message"], meta={"voice": True, "role": "ai"})
+    detail = feedback.get("detail", {})
+    # detailsの処理
+    for key, value in detail.items():
+        if key == "agenda":
+            message = "アジェンダは以下です。\n"    
+            message += "\n".join(value)
+            post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
+        elif key == "summary":
+            message = "要約です。\n"
+            message += value
+            post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
+        elif key == "evaluation":
+            message = "評価です。\n"
+            message += value
+            post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
+        elif key == "improvement":
+            message = "改善提案です。\n"
+            message += value
+            post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"}) 
 
     return jsonify({"data": feedback}), 200
 

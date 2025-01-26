@@ -8,7 +8,7 @@ COMMENT_COLLECTION = "comments"
 
 db_client = Config.get_db_client()
 
-def post_message(meeting_id, speaker, message, detail=None):
+def post_message(meeting_id, speaker, message, meta=None):
     tz_japan = pytz.timezone("Asia/Tokyo")
     now = datetime.now(tz_japan).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -16,7 +16,7 @@ def post_message(meeting_id, speaker, message, detail=None):
         "speak_at": now,
         "speaker": speaker,  # スピーカーを追加
         "message": message,   # メッセージを追加
-        "detail": detail, # AIによる補足情報
+        "meta": meta, # AIによる補足情報
     }
 
     db_client.collection(MEETING_COLLECTION).document(meeting_id).collection(COMMENT_COLLECTION).add(data)
