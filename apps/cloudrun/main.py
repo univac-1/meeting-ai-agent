@@ -72,7 +72,7 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
     # AIのフィードバックをDB保存する
     post_message(meeting_id, "AI", feedback)
 
-    return jsonify(feedback)
+    return jsonify({"data": feedback}), 200
 
 @app.route('/message', methods=["POST"])
 def message():
