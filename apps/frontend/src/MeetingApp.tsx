@@ -35,6 +35,7 @@ import SpeechRecognition, {
 } from "react-speech-recognition";
 import axios from "axios";
 import "./index.css";
+import { CLOUD_RUN_ENDPOINT } from "./config";
 
 const APP_ID = "dfd31dd0fc764a25b5bba0bbac2d5ef6";
 
@@ -104,11 +105,11 @@ export const MeetingApp = () => {
       console.log("==== 区切り ====");
       axios
         .post(
-          "https://jsonplaceholder.typicode.com/posts",
+          `${CLOUD_RUN_ENDPOINT}/message`,
           {
-            title: "Speech Transcript",
-            body: `${uid}「${transcript}」`,
-            userId: 1,
+            meeting_id: channel,
+            speaker: uid,
+            message: transcript,
           },
           {
             headers: {
@@ -124,21 +125,8 @@ export const MeetingApp = () => {
   // AI Agentボタンクリック時の処理
   const handleAIAgentClick = () => {
     console.log("AI AGENT button clicked");
-    // ダミーのAPI呼び出し
     axios
-      .post(
-        "https://jsonplaceholder.typicode.com/posts",
-        {
-          title: "Call AI Agent function",
-          body: "Call AI Agent function",
-          userId: 1,
-        },
-        {
-          headers: {
-            "Content-type": "application/json; charset=UTF-8",
-          },
-        }
-      )
+      .get(`${CLOUD_RUN_ENDPOINT}/meeting/${channel}/agent-feedback`)
       .then((response) => console.log(response.data))
       .catch((error) => console.error("Error:", error));
     // 音声合成する場合

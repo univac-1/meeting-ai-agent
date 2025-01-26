@@ -5,6 +5,7 @@ from agent.conversation import handle_conversation
 from agent.meeting_feedback_graph import process_meeting_feedback, MeetingInput
 from flask_cors import CORS
 
+from message.message import post_message, get_message_history
 from meeting.meeting import create_meeting
 
 app = Flask(__name__)
@@ -27,7 +28,7 @@ def meeting():
 
     meeting_id = create_meeting(meeting_name, participants, agenda)
 
-    return jsonify({"data": {"meeting_id": meeting_id}}), 200
+    return jsonify({"data": {"meeting_id": meeting_id}}), 201
 
 
 
@@ -58,12 +59,32 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
         )
     }
 
+    # 会話履歴をDBから取得する
+    # TODO:これを使う
+    message_history = get_message_history(meeting_id)
+
     if meeting_id not in mock_meetings:
         return jsonify({"error": "Meeting not found"}), 404
     
     meeting_input = mock_meetings[meeting_id]
     feedback = process_meeting_feedback(meeting_input)
-    return jsonify(feedback)
+
+    # AIのフィードバックをDB保存する
+    post_message(meeting_id, "AI", feedback)
+
+    return jsonify({"data": feedback}), 200
+
+@app.route('/message', methods=["POST"])
+def message():
+    data = request.get_json()
+    meeting_id = data.get("meeting_id")
+    speaker = data.get("speaker")
+    message = data.get("message")
+
+    post_message(meeting_id, speaker, message)
+
+    return jsonify({"data": "OK"}), 201
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
