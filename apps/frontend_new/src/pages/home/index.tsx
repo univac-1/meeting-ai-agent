@@ -1,3 +1,6 @@
+import "core-js/stable";
+import "regenerator-runtime/runtime";
+
 import { useMount, useMessage } from "@/common"
 import { IUserInfo, IUserData, ILanguageSelect, ISttData } from "@/types"
 import {
@@ -32,6 +35,9 @@ import { useSelector, useDispatch } from "react-redux"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useTranslation } from "react-i18next"
+import axios from "axios"
+import { CLOUD_RUN_ENDPOINT } from "../../config"
+import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition"
 
 import styles from "./index.module.scss"
 
@@ -66,6 +72,8 @@ const HomePage = () => {
   const [userRtmList, setRtmUserList] = useState<ISimpleUserInfo[]>([])
   const [rtcUserMap, setRtcUserMap] = useState<Map<number | string, IRtcUser>>(new Map())
   const [centerUserId, setCenterUserId] = useState(userInfo.userId)
+
+  const { transcript, listening, browserSupportsSpeechRecognition } = useSpeechRecognition()
 
   // init
   useEffect(() => {
@@ -123,6 +131,45 @@ const HomePage = () => {
     }
     // do not put isMounted in the dependencies
   }, [sttData.status])
+
+  useEffect(() => {
+    if (!browserSupportsSpeechRecognition) {
+      console.warn("Browser doesn't support speech recognition.")
+      return
+    }
+
+    if (!localAudioMute) {
+      if (!listening) {
+        SpeechRecognition.startListening()
+      }
+    } else {
+      if (listening) {
+        SpeechRecognition.stopListening()
+      }
+    }
+  }, [localAudioMute, listening, browserSupportsSpeechRecognition])
+
+  useEffect(() => {
+    if (!localAudioMute && transcript) {
+      console.log(transcript)
+      axios
+        .post(
+          `${CLOUD_RUN_ENDPOINT}/message`,
+          {
+            meeting_id: channel,
+            speaker: userId,
+            message: transcript,
+          },
+          {
+            headers: {
+              "Content-type": "application/json; charset=UTF-8",
+            },
+          }
+        )
+        .then((response) => console.log(response.data))
+        .catch((error) => console.error("Error:", error))
+    }
+  }, [listening, localAudioMute])
 
   const simpleUserMap: Map<number | string, IUserInfo> = useMemo(() => {
     const map = new Map<number | string, IUserInfo>()
