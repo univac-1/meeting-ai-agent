@@ -14,3 +14,7 @@ class Config:
             if cls._db_client is None:
                 cls._db_client = google.cloud.firestore.Client(database=cls.dbname)
         return cls._db_client
+
+    @classmethod
+    def get_ai_facilitator_name(cls):
+        return "AIファシリテータ"

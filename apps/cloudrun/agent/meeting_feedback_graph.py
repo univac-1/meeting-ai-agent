@@ -6,6 +6,7 @@ import google.generativeai as genai
 from langgraph.graph import StateGraph, END
 from pydantic import BaseModel
 import json
+from config import Config
 
 # 入力データの型定義
 class MeetingInput(BaseModel):
@@ -297,18 +298,22 @@ def process_meeting_feedback(meeting_input: MeetingInput) -> Dict:
     # アジェンダ生成の場合は、アジェンダのみを返す
     if not meeting_input.agenda:
         return {
-            "agenda": result["agenda"]
+            "message": "アジェンダを作成しました。",
+            "speaker": Config.get_ai_facilitator_name(),
+            "detail": AgendaResponse(
+                agenda=result["agenda"]
+            )
         }
     
     # 通常のフィードバックの場合は新しい構造で返す
     return {
-        "comment": result["comment"],
-        "detail": {
-            "summary": result["summary"],
-            "evaluation": result["evaluation"],
-            "improvement": result["improvement"]
-        },
-        "agenda": result["agenda"]
+        "message": result["comment"],
+        "speaker": Config.get_ai_facilitator_name(),
+        "detail": DetailResponse(
+            summary=result["summary"],
+            evaluation=result["evaluation"],
+            improvement=result["improvement"]
+        )
     }
 
 class AgendaResponse(TypedDict):
