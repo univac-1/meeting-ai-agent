@@ -22,7 +22,6 @@ class GraphState(TypedDict):
     participants: List[str]
     comment_history: List[Dict]
     comment: Optional[str]
-    detail: Optional[Dict[str, str]]
     summary: Optional[str]
     evaluation: Optional[str]
     improvement: Optional[str]
@@ -45,19 +44,26 @@ def init_gemini(system_instruction: str = None):
 
 # アジェンダ生成ノード
 def create_agenda_node():
-    system_prompt = """あなたは会議のファシリテーターとして、会議の目的に基づいて効果的なアジェンダを作成します。
-以下の点を考慮してアジェンダを作成してください：
+    system_prompt = f"""あなたは会議の目的に基づいてアジェンダを作成する専門のAIです。
+与えられた入力を踏まえた上で、会議の目的を達成するために必要なステップをアジェンダとして作成してください。
+
+アジェンダのポイント：
 1. 会議の目的を達成するために必要なステップ
 2. 参加者全員が効果的に議論に参加できる構成
 3. 時間配分を考慮した現実的な項目数（3-5項目程度）
-4. 具体的な成果物や決定事項の明確化"""
+4. 具体的な成果物や決定事項の明確化
+
+入力：
+- 目的：会議の目的
+- 参加者：会議の参加者
+"""
     
     model = init_gemini(system_prompt)
     
     def generate_agenda(state: GraphState) -> GraphState:
         prompt = {
-            "purpose": state["purpose"],
-            "participants": state["participants"]
+            "目的": state["purpose"],
+            "参加者": state["participants"]
         }
 
         response = model.generate_content(
@@ -72,7 +78,7 @@ def create_agenda_node():
 
         try:
             result = json.loads(response.text)
-            state["agenda"] = result["agenda"]
+            state["agenda"] = result["アジェンダ"]
             return state
         except Exception as e:
             print(f"Error processing agenda: {e}")
@@ -83,21 +89,32 @@ def create_agenda_node():
 
 # 会議要約ノード
 def create_summary_node():
-    system_prompt = """あなたは会議の内容を簡潔に要約する専門家です。
-以下のポイントに注目して要約を作成してください：
+    system_prompt = """あなたは進行途中の会議の状況を簡潔に要約する専門のAIです。
+与えられた入力を踏まえた上で、会議の状況を要約してください
+
+要約のポイント：
 1. 議論された主要なトピック
 2. 参加者から出された重要な意見
 3. 決定事項や合意点
-4. 未解決の課題"""
+4. 未解決の課題
+5. 会議は進行途中であるため、必ずしもすべてのアジェンダを網羅しているとは限らない
+6. AIの発言内容は除外する
+
+入力：
+- 目的：会議の目的
+- アジェンダ：会議のアジェンダ
+- 参加者：会議の参加者
+- 発言履歴：会議の発言履歴
+"""
     
     model = init_gemini(system_prompt)
     
     def summarize(state: GraphState) -> GraphState:
         prompt = {
-            "purpose": state["purpose"],
-            "agenda": state["agenda"],
-            "participants": state["participants"],
-            "comment_history": state["comment_history"]
+            "目的": state["purpose"],
+            "アジェンダ": state["agenda"],
+            "参加者": state["participants"],
+            "発言履歴": state["comment_history"]
         }
 
         response = model.generate_content(
@@ -112,7 +129,7 @@ def create_summary_node():
 
         try:
             result = json.loads(response.text)
-            state["summary"] = result["summary"]
+            state["summary"] = result["要約"]
             return state
         except Exception as e:
             print(f"Error processing summary: {e}")
@@ -123,21 +140,30 @@ def create_summary_node():
 
 # 会議評価ノード
 def create_evaluation_node():
-    system_prompt = """あなたは会議の評価を行う専門家です。
-以下のポイントについて評価してください：
-1. アジェンダに沿った進行ができているか
-2. 参加者全員が適切に発言できているか
-3. 会議の目的に向かって議論が進んでいるか
-4. 時間の使い方は効率的か"""
-    
+    system_prompt = """あなたは進行途中の会議の評価を行う専門のAIです。
+与えられた入力を踏まえた上で、会議の評価を行ってください
+
+評価の観点：
+1. 会議の目的から脱線していないか
+2. 発言者が偏っていないか
+3. 発言者の意図が正確に伝わっているか
+4. 会議は進行途中であるため、必ずしもすべてのアジェンダを網羅しているとは限らない
+5. AIの発言内容は除外する
+
+入力：
+- 目的：会議の目的
+- アジェンダ：会議のアジェンダ
+- 参加者：会議の参加者
+- 発言履歴：会議の発言履歴
+"""
     model = init_gemini(system_prompt)
     
     def evaluate(state: GraphState) -> GraphState:
         prompt = {
-            "purpose": state["purpose"],
-            "agenda": state["agenda"],
-            "participants": state["participants"],
-            "comment_history": state["comment_history"]
+            "目的": state["purpose"],
+            "アジェンダ": state["agenda"],
+            "参加者": state["participants"],
+            "発言履歴": state["comment_history"]
         }
 
         response = model.generate_content(
@@ -152,7 +178,7 @@ def create_evaluation_node():
 
         try:
             result = json.loads(response.text)
-            state["evaluation"] = result["evaluation"]
+            state["evaluation"] = result["評価"]
             return state
         except Exception as e:
             print(f"Error processing evaluation: {e}")
@@ -163,20 +189,30 @@ def create_evaluation_node():
 
 # 会議改善ノード
 def create_improvement_node():
-    system_prompt = """あなたは会議の改善を提案する専門家です。
-以下の点について具体的な改善案を提案してください：
-1. 残りの時間でどのように会議を進行すべきか
-2. 参加者の発言を促すためのアドバイス
-3. 会議の目的達成のための具体的なアクション"""
+    system_prompt = """あなたは進行途中の会議を改善する専門のAIです。
+以下の入力を踏まえた上で、会議の残り時間で出来る範囲で会議を改善してください。
+
+改善のポイント：
+1. 時間配分を考慮した現実的な項目数（3項目以下）にする
+2. 言語化能力の不足など、参加者の能力に依存するような課題はAI自身で補うようにする
+3. 改善は、残りの会議時間でできるものに限る
+4. AIの発言内容は除外する
+
+入力：
+- 目的：会議の目的
+- アジェンダ：会議のアジェンダ
+- 参加者：会議の参加者
+- 評価：会議の評価
+"""
     
     model = init_gemini(system_prompt)
     
     def improve(state: GraphState) -> GraphState:
         prompt = {
-            "evaluation": state["evaluation"],
-            "purpose": state["purpose"],
-            "agenda": state["agenda"],
-            "participants": state["participants"]
+            "目的": state["purpose"],
+            "アジェンダ": state["agenda"],
+            "参加者": state["participants"],
+            "評価": state["evaluation"]
         }
 
         response = model.generate_content(
@@ -191,7 +227,7 @@ def create_improvement_node():
 
         try:
             result = json.loads(response.text)
-            state["improvement"] = result["improvements"]
+            state["improvement"] = result["改善案"]
             return state
         except Exception as e:
             print(f"Error processing improvements: {e}")
@@ -201,16 +237,25 @@ def create_improvement_node():
     return improve
 
 def create_comment_node():
-    system_prompt = """あなたは会議全体を一言で総括するエキスパートです。
-評価と改善案を踏まえて、会議の状況を端的に表現してください。
-コメントは1-2文程度の簡潔なものにしてください。"""
+    system_prompt = """あなたは進行途中の会議で人間を応援するAIです。
+会議の評価と改善案を踏まえて、端的に応援コメントをしてください。
+
+コメントのポイント：
+1. 会議は進行途中であるため、必ずしもすべてのアジェンダを網羅しているとは限らない
+2. コメントは1文程度の簡潔なもの
+3. 残りの会議を雰囲気よく進めやすくなるようなポップな表現にする
+
+入力：
+- 評価：会議の評価
+- 改善案：会議の改善案
+"""
     
     model = init_gemini(system_prompt)
     
     def comment(state: GraphState) -> GraphState:
         prompt = {
-            "evaluation": state["evaluation"],
-            "improvement": state["improvement"]
+            "評価": state["evaluation"],
+            "改善案": state["improvement"]
         }
 
         response = model.generate_content(
@@ -225,7 +270,7 @@ def create_comment_node():
 
         try:
             result = json.loads(response.text)
-            state["comment"] = result["comment"]
+            state["comment"] = result["コメント"]
             return state
         except Exception as e:
             print(f"Error processing comment: {e}")
@@ -286,7 +331,6 @@ def process_meeting_feedback(meeting_input: MeetingInput) -> Dict:
         participants=meeting_input.participants,
         comment_history=meeting_input.comment_history,
         comment=None,
-        detail=None,
         summary=None,
         evaluation=None,
         improvement=None
@@ -299,7 +343,6 @@ def process_meeting_feedback(meeting_input: MeetingInput) -> Dict:
     if not meeting_input.agenda:
         return {
             "message": "アジェンダを作成しました。",
-            "speaker": Config.get_ai_facilitator_name(),
             "detail": AgendaResponse(
                 agenda=result["agenda"]
             )
@@ -308,7 +351,6 @@ def process_meeting_feedback(meeting_input: MeetingInput) -> Dict:
     # 通常のフィードバックの場合は新しい構造で返す
     return {
         "message": result["comment"],
-        "speaker": Config.get_ai_facilitator_name(),
         "detail": DetailResponse(
             summary=result["summary"],
             evaluation=result["evaluation"],
@@ -317,21 +359,21 @@ def process_meeting_feedback(meeting_input: MeetingInput) -> Dict:
     }
 
 class AgendaResponse(TypedDict):
-    agenda: list[str]
+    アジェンダ: list[str]
 
 class SummaryResponse(TypedDict):
-    summary: str
+    要約: str
 
 class EvaluationResponse(TypedDict):
-    evaluation: str
+    評価: str
 
 class ImprovementResponse(TypedDict):
-    improvements: str
+    改善案: str
 
 class CommentResponse(TypedDict):
-    comment: str
+    コメント: str
 
 class DetailResponse(TypedDict):
-    summary: str
-    evaluation: str
-    improvement: str 
+    要約: str
+    評価: str
+    改善案: str 
