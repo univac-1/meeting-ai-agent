@@ -4,7 +4,7 @@ import pytz
 
 MEETING_COLLECTION = "meetings"
 # TODO 確認する
-COMMENT_COLLECTION = "messages"
+COMMENT_COLLECTION = "comments"
 
 db_client = Config.get_db_client()
 
