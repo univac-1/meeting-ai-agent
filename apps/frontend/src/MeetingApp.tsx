@@ -36,6 +36,7 @@ import SpeechRecognition, {
 import axios from "axios";
 import "./index.css";
 import { CLOUD_RUN_ENDPOINT } from "./config";
+import Transcript from "./components/Transcript";
 
 const APP_ID = "dfd31dd0fc764a25b5bba0bbac2d5ef6";
 
@@ -46,6 +47,7 @@ export const MeetingApp = () => {
   const [uid, setUid] = useState("");
   const { meetingId } = useParams<{ meetingId: string }>();
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [showTranscript, setShowTranscript] = useState(false);
 
   useEffect(() => {
     const getVoices = () => {
@@ -256,8 +258,17 @@ export const MeetingApp = () => {
           >
             AI AGENT
           </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={() => setShowTranscript((prev) => !prev)}
+            sx={{ px: 4 }}
+          >
+            {showTranscript ? "Hide Transcript" : "Show Transcript"}
+          </Button>
         </Stack>
       )}
+      {isConnected && showTranscript && <Transcript meetingId={channel} />}
     </>
   );
 };
