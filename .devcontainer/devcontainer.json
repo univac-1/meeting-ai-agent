@@ -1,6 +1,8 @@
 {
     "name": "Python Development",
-    "image": "mcr.microsoft.com/devcontainers/python:3.11",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
     "appPort": [
         "80:8080"
     ],

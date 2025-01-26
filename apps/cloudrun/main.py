@@ -1,12 +1,12 @@
 from flask import Flask, request, jsonify
 from typing import Dict
 
-from agent.conversation import handle_conversation
 from agent.meeting_feedback_graph import process_meeting_feedback, MeetingInput
 from flask_cors import CORS
 
 from message.message import post_message, get_message_history
 from meeting.meeting import create_meeting
+from config import Config
 
 app = Flask(__name__)
 app.json.ensure_ascii = False
@@ -43,34 +43,38 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
     Returns:
         Dict: 会議フィードバック（アジェンダ、要約、評価、改善提案）
     """
-
-        # テスト用のモックデータ
-    mock_meetings: Dict[str, MeetingInput] = {
-        "test-meeting": MeetingInput(
-            purpose="プロダクトのアイデアを決める",
-            agenda=["参加者からアイデアを募る", "参加者同士でアイデアを評価", "最も評価のよいものに決定"],
-            participants=["ごん", "ぴとー", "ごれいぬ"],
-            comment_history=[
-                {"speaker": "ごん", "message": "ぼくは事務手続きの処理フローを可視化するツールを作りたい"},
-                {"speaker": "ぴとー", "message": "それってネットで検索すればよくない?chatbotもある気がするけど"},
-                {"speaker": "ごん", "message": "パスポートをとったときの話だけど、必要なフローを網羅するのに横断的にサイト検索しないといけないのは大変だったよ。"},
-                {"speaker": "ぴとー", "message": "ごめん、なにいってるかよくわかんない。次"}
-            ]
-        )
-    }
-
-    # 会話履歴をDBから取得する
-    # TODO:これを使う
-    message_history = get_message_history(meeting_id)
-
-    if meeting_id not in mock_meetings:
-        return jsonify({"error": "Meeting not found"}), 404
+    # 会議の基本情報を取得
+    meeting_ref = Config.get_db_client().collection("meetings").document(meeting_id)
+    meeting_doc = meeting_ref.get()
     
-    meeting_input = mock_meetings[meeting_id]
+    if not meeting_doc.exists:
+        return jsonify({"error": "Meeting not found"}), 404
+        
+    meeting_data = meeting_doc.to_dict()
+    print("Meeting data:", meeting_data)  # デバッグ用ログ
+    
+    # 会話履歴を取得
+    message_history = get_message_history(meeting_id)
+    print("Message history:", message_history)  # デバッグ用ログ
+    
+    # MeetingInputを構築
+    try:
+        meeting_input = MeetingInput(
+            purpose=meeting_data.get("purpose", "会議の目的"),
+            agenda=meeting_data.get("agenda", []),
+            participants=meeting_data.get("participants", []),
+            comment_history=message_history if isinstance(message_history, list) else [message_history]
+        )
+    except Exception as e:
+        print("Error creating MeetingInput:", e)
+        print("message_history type:", type(message_history))
+        print("message_history content:", message_history)
+        return jsonify({"error": "Invalid meeting data format"}), 500
+    
     feedback = process_meeting_feedback(meeting_input)
 
     # AIのフィードバックをDB保存する
-    post_message(meeting_id, "AI", feedback)
+    post_message(meeting_id, feedback["speaker"], feedback["message"], feedback.get("detail"))
 
     return jsonify({"data": feedback}), 200
 
