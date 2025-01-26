@@ -28,7 +28,7 @@ def meeting():
 
     meeting_id = create_meeting(meeting_name, participants, agenda)
 
-    return jsonify({"data": {"meeting_id": meeting_id}}), 200
+    return jsonify({"data": {"meeting_id": meeting_id}}), 201
 
 
 
@@ -83,7 +83,7 @@ def message():
 
     post_message(meeting_id, speaker, message)
 
-    return jsonify({"data": "OK"}), 200
+    return jsonify({"data": "OK"}), 201
 
 
 if __name__ == '__main__':
