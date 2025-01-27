@@ -108,24 +108,21 @@ const MeetingSetup = () => {
                 <DatePicker
                   label="開始日"
                   value={startDate}
-                  onChange={(newValue) => setStartDate(newValue)}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
+                  onChange={(newValue) => newValue && setStartDate(newValue)}
                 />
               </Grid>
               <Grid item xs={6}>
                 <TimePicker
                   label="開始時刻"
                   value={startTime}
-                  onChange={(newValue) => setStartTime(newValue)}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
+                  onChange={(newValue) => newValue && setStartTime(newValue)}
                 />
               </Grid>
               <Grid item xs={6}>
                 <TimePicker
                   label="終了時刻"
                   value={endTime}
-                  onChange={(newValue) => setEndTime(newValue)}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
+                  onChange={(newValue) => newValue && setEndTime(newValue)}
                 />
               </Grid>
               <Grid item xs={12}>
