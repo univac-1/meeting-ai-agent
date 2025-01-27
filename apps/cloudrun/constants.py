@@ -1,0 +1,2 @@
+
+FIRESTORE_MEETING_COLLECTION = "meetings"
