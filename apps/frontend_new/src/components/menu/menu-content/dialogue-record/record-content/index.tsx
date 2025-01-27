@@ -1,62 +1,38 @@
 import Avatar from "@/components/avatar"
-import { RootState } from "@/store"
-import { formatTime2, isArabic } from "@/common"
-import { IChatItem } from "@/types"
+import { ICommentItem } from "@/types"
+import { useMemo, useRef, useState, useEffect } from "react"
+import { db } from "@/firebase"
+import { collection, onSnapshot, orderBy, query } from "firebase/firestore"
 import { useSelector } from "react-redux"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { RootState } from "@/store"
 
 import styles from "./index.module.scss"
 
 let lastScrollTop = 0
 
 const RecordContent = () => {
-  const recordLanguageSelect = useSelector((state: RootState) => state.global.recordLanguageSelect)
-  const languageSelect = useSelector((state: RootState) => state.global.languageSelect)
-  const subtitles = useSelector((state: RootState) => state.global.sttSubtitles)
-  const { translate1List = [], translate2List = [] } = recordLanguageSelect
-  const { transcribe1, transcribe2 } = languageSelect
   const contentRef = useRef<HTMLElement>(null)
   const [humanScroll, setHumanScroll] = useState(false)
+  const [chatList, setChatList] = useState<ICommentItem[]>([])
+  const meetingId = useSelector((state: RootState) => state.global.meetingId)
 
-  const chatList: IChatItem[] = useMemo(() => {
-    const reslist: IChatItem[] = []
-    subtitles.forEach((el) => {
-      if (el.lang == transcribe1) {
-        const chatItem: IChatItem = {
-          userName: el.username,
-          content: el.text,
-          translations: [],
-          startTextTs: el.startTextTs,
-          textTs: el.textTs,
-          time: el.startTextTs,
-        }
-        el.translations?.forEach((tran) => {
-          if (translate1List.includes(tran.lang)) {
-            const tranItem = { lang: tran.lang, text: tran.text }
-            chatItem.translations?.push(tranItem)
-          }
-        })
-        reslist.push(chatItem)
-      } else if (el.lang == transcribe2) {
-        const chatItem: IChatItem = {
-          userName: el.username,
-          content: el.text,
-          translations: [],
-          startTextTs: el.startTextTs,
-          textTs: el.textTs,
-          time: el.startTextTs,
-        }
-        el.translations?.forEach((tran) => {
-          if (translate2List.includes(tran.lang)) {
-            const tranItem = { lang: tran.lang, text: tran.text }
-            chatItem.translations?.push(tranItem)
-          }
-        })
-        reslist.push(chatItem)
-      }
+  useEffect(() => {
+    if (!meetingId) return
+    const commentsRef = collection(db, "meetings", meetingId, "comments")
+    const q = query(commentsRef, orderBy("speak_at"))
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const messageHistory: ICommentItem[] = []
+      querySnapshot.forEach((doc) => {
+        const data = doc.data() as ICommentItem
+        data.speaker = data.speaker.toString()
+        messageHistory.push(data)
+      })
+      setChatList(messageHistory)
     })
-    return reslist.sort((a: IChatItem, b: IChatItem) => Number(a.time) - Number(b.time))
-  }, [translate1List, translate2List, transcribe1, transcribe2, subtitles])
+
+    return () => unsubscribe()
+  }, [meetingId])
 
   const onScroll = (e: any) => {
     const scrollTop = contentRef.current?.scrollTop ?? 0
@@ -89,23 +65,17 @@ const RecordContent = () => {
       {chatList.map((item, index) => (
         <div key={index} className={styles.item}>
           <div className={styles.left}>
-            <Avatar userName={item.userName}></Avatar>
+            <Avatar userName={item.speaker}></Avatar>
           </div>
           <div className={styles.right}>
             <div className={styles.up}>
-              <div className={styles.userName}>{item.userName}</div>
-              <div className={styles.time}>{formatTime2(item.time)}</div>
+              <div className={styles.userName}>{item.speaker}</div>
+              <div className={styles.time}>
+                {new Date(item.speak_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </div>
             </div>
             <div className={styles.bottom}>
-              <div className={styles.content}>{item.content}</div>
-              {item.translations?.map((tran, index) => (
-                <div className={styles.translate} key={index}>
-                  <span className={styles.bold}>{`[${tran?.lang}]: `}</span>
-                  <span className={`${isArabic(tran?.lang) ? styles.arabic : ""}`}>
-                    {tran?.text}
-                  </span>
-                </div>
-              ))}
+              <div className={styles.content}>{item.message}</div>
             </div>
           </div>
         </div>

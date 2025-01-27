@@ -46,6 +46,7 @@ export interface InitialState {
     height: number
   }
   messageList: IMessage[]
+  meetingId: string
 }
 
 const getInitialState = (): InitialState => {
@@ -72,6 +73,7 @@ const getInitialState = (): InitialState => {
       height: 0,
     },
     messageList: [],
+    meetingId: "",
   }
 }
 
@@ -227,6 +229,9 @@ export const globalSlice = createSlice({
     reset: (state) => {
       Object.assign(state, getInitialState())
     },
+    setMeetingId: (state, action: PayloadAction<string>) => {
+      state.meetingId = action.payload
+    },
   },
 })
 
@@ -252,6 +257,7 @@ export const {
   addMessage,
   setTipSTTEnable,
   reset,
+  setMeetingId,
 } = globalSlice.actions
 
 export default globalSlice.reducer

@@ -8,7 +8,7 @@ function _pad(num: number) {
 
 const _GPT_URL = import.meta.env.VITE_AGORA_GPT_URL
 
-export const REGEX_SPECIAL_CHAR = /[^a-zA-Z0-9_]/g
+export const REGEX_SPECIAL_CHAR = /[^a-zA-Z0-9-]/g
 
 export const getDefaultLanguage = (): string => {
   if (navigator.language) {

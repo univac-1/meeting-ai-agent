@@ -5,7 +5,7 @@ import { InputStatuses } from "@/types"
 import { useTranslation } from "react-i18next"
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { genRandomUserId, REGEX_SPECIAL_CHAR, GITHUB_URL, parseQuery } from "@/common"
-import { setOptions, setUserInfo } from "@/store/reducers/global"
+import { setOptions, setUserInfo, setMeetingId } from "@/store/reducers/global"
 import { version } from "../../../package.json"
 import { useNavigate, useLocation } from "react-router-dom"
 
@@ -60,6 +60,7 @@ const LoginPage = () => {
       return messageApi.error("please enter user name!")
     }
     dispatch(setOptions({ channel }))
+    dispatch(setMeetingId(channel))
     dispatch(
       setUserInfo({
         userName,

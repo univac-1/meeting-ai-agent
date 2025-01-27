@@ -60,7 +60,6 @@ export interface ITextItem {
 export interface IChatItem {
   userName: string
   content: string
-  translations: ITranslationItem[]
   startTextTs: string | number
   textTs: string | number
   time: string | number
@@ -85,4 +84,11 @@ export interface IMessage {
   content: string
   type: "success" | "error" | "warning" | "info"
   duration?: number // s
+}
+
+export interface ICommentItem {
+  message: string;
+  speak_at: string;
+  speaker: string;
+  detail: any | null;
 }

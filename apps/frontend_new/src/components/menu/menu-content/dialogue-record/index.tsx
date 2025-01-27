@@ -2,7 +2,7 @@ import RecordContent from "./record-content"
 import { RootState } from "@/store"
 import { addMessage } from "@/store/reducers/global"
 import { useSelector, useDispatch } from "react-redux"
-import { downloadText, showAIModule, genContentText } from "@/common"
+import { downloadText, genContentText } from "@/common"
 import LanguageShowDialog from "@/components/dialog/language-show"
 import LanguageStorageDialog from "@/components/dialog/language-storage"
 import RecordHeader from "./record-header"
@@ -35,19 +35,9 @@ const DialogueRecord = (props: DialogueRecordProps) => {
 
   return (
     <div className={styles.dialogRecord}>
-      <RecordHeader
-        onClickSetting={() => {
-          setOpenLanguageShowDialog(!openLanguageShowDialog)
-        }}
-      ></RecordHeader>
       <RecordContent></RecordContent>
       {sttSubtitles.length ? (
         <div className={styles.btnWrapper}>
-          {showAIModule() ? (
-            <div className={styles.btn} onClick={onClickExport}>
-              {t("export.text")}
-            </div>
-          ) : null}
           <div className={styles.btn} onClick={onClickStorage}>
             {t("storage.text")}
           </div>
