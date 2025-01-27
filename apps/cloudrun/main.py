@@ -4,6 +4,7 @@ from typing import Dict
 from agent.meeting_feedback_graph import process_meeting_feedback, MeetingInput
 from flask_cors import CORS
 
+from constants import FIRESTORE_MEETING_COLLECTION
 from message.message import post_message, get_message_history
 from meeting.meeting import create_meeting
 from config import Config
@@ -51,7 +52,7 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
         Dict: 会議フィードバック（アジェンダ、要約、評価、改善提案）
     """
     # 会議の基本情報を取得
-    meeting_ref = Config.get_db_client().collection("meetings").document(meeting_id)
+    meeting_ref = Config.get_db_client().collection(FIRESTORE_MEETING_COLLECTION).document(meeting_id)
     meeting_doc = meeting_ref.get()
     
     if not meeting_doc.exists:
