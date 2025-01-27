@@ -3,7 +3,7 @@ from typing_extensions import TypedDict
 from datetime import datetime
 import os
 import google.generativeai as genai
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph, END, START
 from pydantic import BaseModel
 import json
 from config import Config
@@ -15,16 +15,95 @@ class MeetingInput(BaseModel):
     participants: List[str]
     comment_history: List[Dict]
 
+# 評価結果の型定義
+class EvaluationResult(TypedDict):
+    engagement: str
+    concreteness: str
+    direction: str
+
 # 状態の型定義
 class GraphState(TypedDict):
     purpose: str
     agenda: List[str]
     participants: List[str]
     comment_history: List[Dict]
-    comment: Optional[str]
+    facilitator_message: Optional[str]
+    summary: Optional[str]
+    evaluation: Optional[EvaluationResult]
+
+# エージェントの処理結果詳細
+class DetailResponse(TypedDict):
     summary: Optional[str]
     evaluation: Optional[str]
-    improvement: Optional[str]
+    agenda: Optional[List[str]]
+
+# エージェントの処理結果
+class ProcessMeetingFeedbackResponse(TypedDict):
+    message: str
+    detail: DetailResponse
+
+# LLMのレスポンス型定義
+class AgentResponse(TypedDict):
+    agenda: List[str]
+    summary: str
+    evaluation: Dict[str, str]
+    message: str
+
+# LLMのレスポンススキーマ定義
+AGENDA_RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "アジェンダ": {
+            "type": "array",
+            "description": "会議のアジェンダ項目のリスト",
+            "items": {
+                "type": "string"
+            }
+        }
+    },
+    "required": ["アジェンダ"]
+}
+
+SUMMARY_RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "要約": {
+            "type": "string",
+            "description": "会議の進行状況の要約"
+        }
+    },
+    "required": ["要約"]
+}
+
+EVALUATION_RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "参加者の関与度": {
+            "type": "string",
+            "description": "参加者の関与度に関する評価"
+        },
+        "議論の具体性": {
+            "type": "string",
+            "description": "議論の具体性に関する評価"
+        },
+        "議論の方向性": {
+            "type": "string",
+            "description": "議論の方向性に関する評価"
+        }
+    },
+    "required": ["参加者の関与度", "議論の具体性", "議論の方向性"]
+}
+
+FACILITATOR_RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "次の発言": {
+            "type": "string",
+            "description": "ファシリテータとしての次の発言内容"
+        }
+    },
+    "required": ["次の発言"]
+}
 
 def init_gemini(system_instruction: str = None):
     """Gemini APIの初期化"""
@@ -72,7 +151,7 @@ def create_agenda_node():
                 temperature=0.7,
                 candidate_count=1,
                 response_mime_type="application/json",
-                response_schema=AgendaResponse
+                response_schema=AGENDA_RESPONSE_SCHEMA
             )
         )
 
@@ -123,7 +202,7 @@ def create_summary_node():
                 temperature=0.3,
                 candidate_count=1,
                 response_mime_type="application/json",
-                response_schema=SummaryResponse
+                response_schema=SUMMARY_RESPONSE_SCHEMA
             )
         )
 
@@ -140,15 +219,23 @@ def create_summary_node():
 
 # 会議評価ノード
 def create_evaluation_node():
-    system_prompt = """あなたは進行途中の会議の評価を行う専門のAIです。
-与えられた入力を踏まえた上で、会議の評価を行ってください
+    system_prompt = """あなたは会議の進行状況を評価する専門のAIです。
+以下の観点から会議の状況を評価してください：
 
-評価の観点：
-1. 会議の目的から脱線していないか
-2. 発言者が偏っていないか
-3. 発言者の意図が正確に伝わっているか
-4. 会議は進行途中であるため、必ずしもすべてのアジェンダを網羅しているとは限らない
-5. AIの発言内容は除外する
+1. 参加者の関与度
+   - 発言の偏りはないか
+   - 全員が議論に参加できているか
+   - 建設的な意見交換ができているか
+
+2. 議論の具体性
+   - 抽象的な発言が多くないか
+   - 具体的な提案や例示があるか
+   - 参加者間で認識の共有ができているか
+
+3. 議論の方向性
+   - 議論が脱線していないか
+   - 建設的な雰囲気が保たれているか
+   - 次のステップが明確か
 
 入力：
 - 目的：会議の目的
@@ -156,6 +243,7 @@ def create_evaluation_node():
 - 参加者：会議の参加者
 - 発言履歴：会議の発言履歴
 """
+
     model = init_gemini(system_prompt)
     
     def evaluate(state: GraphState) -> GraphState:
@@ -172,208 +260,173 @@ def create_evaluation_node():
                 temperature=0.3,
                 candidate_count=1,
                 response_mime_type="application/json",
-                response_schema=EvaluationResponse
+                response_schema=EVALUATION_RESPONSE_SCHEMA
             )
         )
 
         try:
             result = json.loads(response.text)
-            state["evaluation"] = result["評価"]
+            state["evaluation"] = {
+                "engagement": result["参加者の関与度"],
+                "concreteness": result["議論の具体性"],
+                "direction": result["議論の方向性"]
+            }
             return state
         except Exception as e:
             print(f"Error processing evaluation: {e}")
-            state["evaluation"] = ""
+            state["evaluation"] = {
+                "engagement": "",
+                "concreteness": "",
+                "direction": ""
+            }
             return state
     
     return evaluate
 
-# 会議改善ノード
-def create_improvement_node():
-    system_prompt = """あなたは進行途中の会議を改善する専門のAIです。
-以下の入力を踏まえた上で、会議の残り時間で出来る範囲で会議を改善してください。
+# ファシリテータノード
+def create_facilitator_node():
+    system_prompt = f"""あなたは会議のファシリテータAIです。
+以下の評価結果に基づいて、適切な介入を行ってください：
 
-改善のポイント：
-1. 時間配分を考慮した現実的な項目数（3項目以下）にする
-2. 言語化能力の不足など、参加者の能力に依存するような課題はAI自身で補うようにする
-3. 改善は、残りの会議時間でできるものに限る
-4. AIの発言内容は除外する
+1. 参加者の関与度が低い場合
+   - 発言の少ない参加者に意見を求める
+   - 参加者の発言を肯定的に受け止める
+   - 全員が参加できる話題を提供する
+
+2. 議論の具体性が低い場合
+   - 抽象的な発言を具体化する
+   - 具体的な例を示す
+   - 参加者間の認識の違いを解消する
+
+3. 議論の方向性がずれている場合
+   - 議論を目的に沿った方向に戻す
+   - 建設的な雰囲気を取り戻す
+   - 次のステップを提案する
+
+発言のポイント：
+1. 「〇〇さん」と名前を呼んで話しかける
+2. 「〜ということですよね？」と確認を取る
+3. 「たとえば、〜」と具体例を示す
+4. 「どう思いますか？」と他の参加者に意見を求める
+5. 常に丁寧で親しみやすい口調を維持する
 
 入力：
 - 目的：会議の目的
 - アジェンダ：会議のアジェンダ
 - 参加者：会議の参加者
-- 評価：会議の評価
+- 発言履歴：会議の発言履歴
+- 評価結果：会議の評価結果
+
+出力：
+- 評価結果に基づいて、最も優先度の高い課題に対応する発言をしてください
+- 会議の目的やアジェンダに沿った具体例を含めてください
+- 最後に必ず他の参加者に意見を求めてください
+- 説明的な内容は避け、自然な会話の流れを意識してください
 """
     
     model = init_gemini(system_prompt)
     
-    def improve(state: GraphState) -> GraphState:
+    def facilitate(state: GraphState) -> GraphState:
         prompt = {
             "目的": state["purpose"],
             "アジェンダ": state["agenda"],
             "参加者": state["participants"],
-            "評価": state["evaluation"]
+            "発言履歴": state["comment_history"],
+            "評価結果": state["evaluation"]
         }
 
         response = model.generate_content(
             str(prompt),
             generation_config=genai.GenerationConfig(
-                temperature=0.3,
+                temperature=0.7,
                 candidate_count=1,
                 response_mime_type="application/json",
-                response_schema=ImprovementResponse
+                response_schema=FACILITATOR_RESPONSE_SCHEMA
             )
         )
 
         try:
             result = json.loads(response.text)
-            state["improvement"] = result["改善案"]
+            state["facilitator_message"] = result["次の発言"]
             return state
         except Exception as e:
-            print(f"Error processing improvements: {e}")
-            state["improvement"] = ""
+            print(f"Error processing facilitator response: {e}")
+            state["facilitator_message"] = ""
             return state
     
-    return improve
+    return facilitate
 
-def create_comment_node():
-    system_prompt = """あなたは進行途中の会議で人間を応援するAIです。
-会議の評価と改善案を踏まえて、端的に応援コメントをしてください。
-
-コメントのポイント：
-1. 会議は進行途中であるため、必ずしもすべてのアジェンダを網羅しているとは限らない
-2. コメントは1文程度の簡潔なもの
-3. 残りの会議を雰囲気よく進めやすくなるようなポップな表現にする
-
-入力：
-- 評価：会議の評価
-- 改善案：会議の改善案
-"""
-    
-    model = init_gemini(system_prompt)
-    
-    def comment(state: GraphState) -> GraphState:
-        prompt = {
-            "評価": state["evaluation"],
-            "改善案": state["improvement"]
-        }
-
-        response = model.generate_content(
-            str(prompt),
-            generation_config=genai.GenerationConfig(
-                temperature=0.3,
-                candidate_count=1,
-                response_mime_type="application/json",
-                response_schema=CommentResponse
-            )
-        )
-
-        try:
-            result = json.loads(response.text)
-            state["comment"] = result["コメント"]
-            return state
-        except Exception as e:
-            print(f"Error processing comment: {e}")
-            state["comment"] = ""
-            return state
-    
-    return comment
 
 def create_meeting_feedback_graph():
+    """会議フィードバックのグラフを作成する"""
     # グラフの作成
     workflow = StateGraph(GraphState)
     
     # ノードの追加
-    workflow.add_node("generate_agenda", create_agenda_node())
+    workflow.add_node("create_agenda", create_agenda_node())
     workflow.add_node("summarize", create_summary_node())
     workflow.add_node("evaluate", create_evaluation_node())
-    workflow.add_node("improve", create_improvement_node())
-    workflow.add_node("generate_comment", create_comment_node())
+    workflow.add_node("facilitate", create_facilitator_node())
     
-    # 条件付きエッジの設定
-    def should_generate_agenda(state: GraphState) -> Dict[str, str]:
+    # 条件分岐の関数
+    def should_create_agenda(state: GraphState) -> Dict[str, str]:
         # アジェンダが空または未設定の場合はアジェンダ生成ノードへ
         if not state.get("agenda"):
-            return {"next": "generate_agenda"}
+            return {"next": "create_agenda"}
         return {"next": "summarize"}
     
     # エッジの設定
-    workflow.add_node("router", should_generate_agenda)  # 条件分岐ノードを追加
-    workflow.set_entry_point("router")  # エントリーポイントを設定
-    
-    # ルーティングの設定
+    workflow.add_node("router", should_create_agenda)
+    workflow.add_edge(START, "router")
     workflow.add_conditional_edges(
         "router",
         lambda x: x["next"],
         {
-            "generate_agenda": "generate_agenda",
+            "create_agenda": "create_agenda",
             "summarize": "summarize"
         }
     )
-    # アジェンダ生成後はそこで終了、それ以外は通常のフローへ
-    workflow.add_edge("generate_agenda", END)
+    workflow.add_edge("create_agenda", END)
     workflow.add_edge("summarize", "evaluate")
-    workflow.add_edge("evaluate", "improve")
-    workflow.add_edge("improve", "generate_comment")
-    workflow.add_edge("generate_comment", END)
+    workflow.add_edge("evaluate", "facilitate")
+    workflow.add_edge("facilitate", END)
     
     # 実行可能なグラフの取得
     return workflow.compile()
 
-def process_meeting_feedback(meeting_input: MeetingInput) -> Dict:
-    """会議フィードバックの処理"""
-    graph = create_meeting_feedback_graph()
-    
+def process_meeting_feedback(meeting_input: MeetingInput) -> ProcessMeetingFeedbackResponse:
+    """会議の状態を受け取り、フィードバックを生成"""
     # 初期状態の設定
-    initial_state = GraphState(
+    state = GraphState(
         purpose=meeting_input.purpose,
-        agenda=meeting_input.agenda or [],
+        agenda=meeting_input.agenda if meeting_input.agenda else [],
         participants=meeting_input.participants,
         comment_history=meeting_input.comment_history,
-        comment=None,
+        facilitator_message=None,
         summary=None,
         evaluation=None,
-        improvement=None
     )
-    
+
     # グラフの実行
-    result = graph.invoke(initial_state)
-    
-    # アジェンダ生成の場合は、アジェンダのみを返す
+    graph = create_meeting_feedback_graph()
+    final_state = graph.invoke(state)
+
+    # アジェンダ生成の場合
     if not meeting_input.agenda:
         return {
             "message": "アジェンダを作成しました。",
-            "detail": AgendaResponse(
-                agenda=result["agenda"]
-            )
+            "detail": {
+                "agenda": final_state.get("agenda", [])
+            }
         }
-    
-    # 通常のフィードバックの場合は新しい構造で返す
+
+    # 通常のフィードバックの場合
     return {
-        "message": result["comment"],
-        "detail": DetailResponse(
-            summary=result["summary"],
-            evaluation=result["evaluation"],
-            improvement=result["improvement"]
-        )
+        "message": final_state.get("facilitator_message", ""),
+        "detail": {
+            "summary": final_state.get("summary", ""),
+            "evaluation": final_state.get("evaluation", {})
+        }
     }
 
-class AgendaResponse(TypedDict):
-    アジェンダ: list[str]
 
-class SummaryResponse(TypedDict):
-    要約: str
-
-class EvaluationResponse(TypedDict):
-    評価: str
-
-class ImprovementResponse(TypedDict):
-    改善案: str
-
-class CommentResponse(TypedDict):
-    コメント: str
-
-class DetailResponse(TypedDict):
-    要約: str
-    評価: str
-    改善案: str 
