@@ -4,6 +4,7 @@ from typing import Dict
 from agent.meeting_feedback_graph import process_meeting_feedback, MeetingInput
 from flask_cors import CORS
 
+from constants import FIRESTORE_MEETING_COLLECTION
 from message.message import post_message, get_message_history
 from meeting.meeting import create_meeting
 from config import Config
@@ -22,11 +23,18 @@ def hello_world():
 @app.route('/meeting', methods=["POST"])
 def meeting():
     data = request.get_json()  # リクエストからデータを取得
-    meeting_name = data.get("meeting_name")
-    participants = data.get("participants")
-    agenda = data.get("agenda")
+    meeting_name = data["meeting_name"]
+    meeting_purpose = data["meeting_purpose"]
+    start_date = data["start_date"]
+    start_time = data["start_time"]
+    end_time = data["end_time"]
+    participants = data["participants"]
+    agenda = data["agenda"]
 
-    meeting_id = create_meeting(meeting_name, participants, agenda)
+    # 会議の作成処理
+    meeting_id = create_meeting(
+        meeting_name, participants, agenda, start_date, start_time, end_time, meeting_purpose
+    )
 
     return jsonify({"data": {"meeting_id": meeting_id}}), 201
 
@@ -44,7 +52,7 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
         Dict: 会議フィードバック（アジェンダ、要約、評価、改善提案）
     """
     # 会議の基本情報を取得
-    meeting_ref = Config.get_db_client().collection("meetings").document(meeting_id)
+    meeting_ref = Config.get_db_client().collection(FIRESTORE_MEETING_COLLECTION).document(meeting_id)
     meeting_doc = meeting_ref.get()
     
     if not meeting_doc.exists:
@@ -57,12 +65,14 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
     message_history = get_message_history(meeting_id)
     print("Message history:", message_history)  # デバッグ用ログ
     
+    # 既存実装に合わせるためにアジェンダの "topic" だけを抽出した配列を生成
+    agenda_topics = [item.get("topic", "") for item in meeting_data["agenda"]]
+
     # MeetingInputを構築
     try:
-        # TODO フロントでは会議の目的が未実装のため、会議名を会議の目的としている
         meeting_input = MeetingInput(
-            purpose=meeting_data.get("purpose", meeting_data.get("meeting_name")),
-            agenda=meeting_data.get("agenda", []),
+            purpose=meeting_data.get("meeting_purpose"),
+            agenda=agenda_topics,
             participants=meeting_data.get("participants", []),
             comment_history=message_history if isinstance(message_history, list) else [message_history]
         )
