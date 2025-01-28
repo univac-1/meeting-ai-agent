@@ -24,6 +24,7 @@ import {
   setTipSTTEnable,
 } from "@/store/reducers/global"
 import LanguageSettingDialog from "../dialog/language-setting"
+import AiAgentDialog from "../dialog/ai-agent"
 import CaptionPopover from "./caption-popover"
 import { Popover } from "antd"
 import { RootState } from "@/store"
@@ -52,6 +53,7 @@ const Footer = (props: IFooterProps) => {
   const aiShow = useSelector((state: RootState) => state.global.aiShow)
   const sttData = useSelector((state: RootState) => state.global.sttData)
   const [showLanguageSetting, setShowLanguageSetting] = useState(false)
+  const [showAIAgent, setAIAgent] = useState(false)
 
   useEffect(() => {
     if (tipSTTEnable) {
@@ -114,6 +116,10 @@ const Footer = (props: IFooterProps) => {
     }
   }
 
+  const toggleAIAgentDialog = () => {
+    setAIAgent(!showAIAgent)
+  }
+
   const toggleLanguageSettingDialog = () => {
     setShowLanguageSetting(!showLanguageSetting)
   }
@@ -163,6 +169,13 @@ const Footer = (props: IFooterProps) => {
           <TranscriptionIcon active={dialogRecordShow}></TranscriptionIcon>
           <span className={styles.text}>{t("footer.conversationHistory")}</span>
         </span>
+        {/* ai agent */}
+        <Popover placement="top" content={t("footer.tipEnableSTTFirst")} open={tipSTTEnable}>
+          <span className={`${styles.item}`} onClick={toggleAIAgentDialog}>
+            <AiIcon></AiIcon>
+            <span className={`${styles.text}`}>{t("footer.aIAgent")}</span>
+          </span>
+        </Popover>
         {/* language */}
         <Popover placement="top" content={t("footer.tipEnableSTTFirst")} open={tipSTTEnable}>
           <span className={`${styles.item}`} onClick={toggleLanguageSettingDialog}>
@@ -181,6 +194,11 @@ const Footer = (props: IFooterProps) => {
       <span className={styles.end} onClick={onClickEnd}>
         {t("closeConversation")}
       </span>
+      <AiAgentDialog
+        open={showAIAgent}
+        onOk={() => setAIAgent(false)}
+        onCancel={() => setAIAgent(false)}
+      ></AiAgentDialog>
       <LanguageSettingDialog
         open={showLanguageSetting}
         onOk={() => setShowLanguageSetting(false)}

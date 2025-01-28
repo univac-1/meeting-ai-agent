@@ -32,6 +32,7 @@
   },
   "footer": {
     "aIAssistant": "AI Assistant",
+    "aIAgent": "AI Agent",
     "langaugesSetting": "Set & Start",
     "conversationHistory": "Conversation History",
     "participantsList": "Participants List",
