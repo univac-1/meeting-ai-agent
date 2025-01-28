@@ -7,6 +7,7 @@ from flask_cors import CORS
 from message.message import post_message, get_message_history
 from meeting.meeting import create_meeting
 from config import Config
+import json
 
 app = Flask(__name__)
 app.json.ensure_ascii = False
@@ -49,14 +50,14 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
     
     if not meeting_doc.exists:
         return jsonify({"error": "Meeting not found"}), 404
-        
+    
     meeting_data = meeting_doc.to_dict()
     print("Meeting data:", meeting_data)  # デバッグ用ログ
-    
+        
     # 会話履歴を取得
     message_history = get_message_history(meeting_id)
     print("Message history:", message_history)  # デバッグ用ログ
-    
+        
     # MeetingInputを構築
     try:
         # TODO フロントでは会議の目的が未実装のため、会議名を会議の目的としている
@@ -71,31 +72,28 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
         print("message_history type:", type(message_history))
         print("message_history content:", message_history)
         return jsonify({"error": "Invalid meeting data format"}), 500
-    
+        
     feedback = process_meeting_feedback(meeting_input)
-
-    # AIのフィードバックを発言履歴用DBに保存する
+        
+        # AIのフィードバックを発言履歴用DBに保存する
     post_message(meeting_id, Config.get_ai_facilitator_name(), feedback["message"], meta={"voice": True, "role": "ai"})
     detail = feedback.get("detail", {})
     # detailsの処理
-    for key, value in detail.items():
-        if key == "agenda":
-            message = "アジェンダは以下です。\n"    
-            message += "\n".join(value)
-            post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
-        elif key == "summary":
-            message = "要約です。\n"
-            message += value
-            post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
-        elif key == "evaluation":
-            message = "評価です。\n"
-            message += value
-            post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
-        elif key == "improvement":
-            message = "改善提案です。\n"
-            message += value
-            post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"}) 
-
+    if detail.get("agenda") is not None:
+        message = "アジェンダです。\n"
+        message += "\n".join(detail.get("agenda"))
+        # TODO meetingのagenda列を更新する
+        post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
+    if detail.get("summary") is not None:
+        message = "要約です。\n"
+        message += detail.get("summary")
+        post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
+    if detail.get("evaluation") is not None:
+        message = "評価です。\n"
+        message += json.dumps(detail.get("evaluation"), ensure_ascii=False)
+        post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
+        
+        
     return jsonify({"data": feedback}), 200
 
 @app.route('/message', methods=["POST"])

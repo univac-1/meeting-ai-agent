@@ -34,7 +34,7 @@ class GraphState(TypedDict):
 # エージェントの処理結果詳細
 class DetailResponse(TypedDict):
     summary: Optional[str]
-    evaluation: Optional[str]
+    evaluation: Optional[EvaluationResult]
     agenda: Optional[List[str]]
 
 # エージェントの処理結果
