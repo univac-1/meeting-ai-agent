@@ -151,13 +151,13 @@ const HomePage = () => {
 
   useEffect(() => {
     if (!localAudioMute && transcript) {
-      console.log(transcript)
+      console.log(`${userName}「${transcript}」`)
       axios
         .post(
           `${CLOUD_RUN_ENDPOINT}/message`,
           {
             meeting_id: channel,
-            speaker: userId,
+            speaker: userName,
             message: transcript,
           },
           {
