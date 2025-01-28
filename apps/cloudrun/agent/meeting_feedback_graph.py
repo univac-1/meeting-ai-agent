@@ -8,12 +8,19 @@ from pydantic import BaseModel
 import json
 from config import Config
 
+# アジェンダ項目の型定義
+class AgendaItem(BaseModel):
+    topic: str
+    duration: int  # 分単位
+
 # 入力データの型定義
 class MeetingInput(BaseModel):
     purpose: str
-    agenda: Optional[List[str]] = None
+    agenda: Optional[List[AgendaItem]] = None
     participants: List[str]
     comment_history: List[Dict]
+    start_at: Optional[str] = None  # ISO 8601形式の文字列 (例: "2024-01-26T10:00:00")
+    end_at: Optional[str] = None    # ISO 8601形式の文字列 (例: "2024-01-26T11:00:00")
 
 # 評価結果の型定義
 class EvaluationResult(TypedDict):
@@ -23,10 +30,8 @@ class EvaluationResult(TypedDict):
 
 # 状態の型定義
 class GraphState(TypedDict):
-    purpose: str
-    agenda: List[str]
-    participants: List[str]
-    comment_history: List[Dict]
+    meeting_input: MeetingInput  # 読み取り専用の入力データ
+    new_agenda: Optional[List[AgendaItem]]  # 新しく生成されたアジェンダ
     facilitator_message: Optional[str]
     summary: Optional[str]
     evaluation: Optional[EvaluationResult]
@@ -42,12 +47,6 @@ class ProcessMeetingFeedbackResponse(TypedDict):
     message: str
     detail: DetailResponse
 
-# LLMのレスポンス型定義
-class AgentResponse(TypedDict):
-    agenda: List[str]
-    summary: str
-    evaluation: Dict[str, str]
-    message: str
 
 # LLMのレスポンススキーマ定義
 AGENDA_RESPONSE_SCHEMA = {
@@ -57,7 +56,18 @@ AGENDA_RESPONSE_SCHEMA = {
             "type": "array",
             "description": "会議のアジェンダ項目のリスト",
             "items": {
-                "type": "string"
+                "type": "object",
+                "properties": {
+                    "トピック": {
+                        "type": "string",
+                        "description": "アジェンダ項目の内容"
+                    },
+                    "所要時間": {
+                        "type": "integer",
+                        "description": "アジェンダ項目の所要時間（分）"
+                    }
+                },
+                "required": ["トピック", "所要時間"]
             }
         }
     },
@@ -129,20 +139,29 @@ def create_agenda_node():
 アジェンダのポイント：
 1. 会議の目的を達成するために必要なステップ
 2. 参加者全員が効果的に議論に参加できる構成
-3. 時間配分を考慮した現実的な項目数（3-5項目程度）
+3. 会議の時間枠に収まる現実的な項目数と時間配分
 4. 具体的な成果物や決定事項の明確化
 
 入力：
 - 目的：会議の目的
 - 参加者：会議の参加者
+- 開始日時：会議の開始時刻
+- 終了日時：会議の終了時刻
+
+出力：
+各アジェンダ項目には以下を含めてください：
+- トピック：議題の内容
+- 所要時間：その項目にかける時間（分）
 """
     
     model = init_gemini(system_prompt)
     
     def generate_agenda(state: GraphState) -> GraphState:
         prompt = {
-            "目的": state["purpose"],
-            "参加者": state["participants"]
+            "目的": state["meeting_input"].purpose,
+            "参加者": state["meeting_input"].participants,
+            "開始日時": state["meeting_input"].start_at,
+            "終了日時": state["meeting_input"].end_at
         }
 
         response = model.generate_content(
@@ -157,11 +176,15 @@ def create_agenda_node():
 
         try:
             result = json.loads(response.text)
-            state["agenda"] = result["アジェンダ"]
-            return state
+            # LLMが生成した所要時間付きのアジェンダを使用
+            return {**state, "new_agenda": [
+                AgendaItem(
+                    topic=item["トピック"],
+                    duration=item["所要時間"]
+                ) for item in result["アジェンダ"]
+            ]}
         except Exception as e:
             print(f"Error processing agenda: {e}")
-            state["agenda"] = []
             return state
     
     return generate_agenda
@@ -190,10 +213,10 @@ def create_summary_node():
     
     def summarize(state: GraphState) -> GraphState:
         prompt = {
-            "目的": state["purpose"],
-            "アジェンダ": state["agenda"],
-            "参加者": state["participants"],
-            "発言履歴": state["comment_history"]
+            "目的": state["meeting_input"].purpose,
+            "アジェンダ": state["meeting_input"].agenda,
+            "参加者": state["meeting_input"].participants,
+            "発言履歴": state["meeting_input"].comment_history
         }
 
         response = model.generate_content(
@@ -248,10 +271,10 @@ def create_evaluation_node():
     
     def evaluate(state: GraphState) -> GraphState:
         prompt = {
-            "目的": state["purpose"],
-            "アジェンダ": state["agenda"],
-            "参加者": state["participants"],
-            "発言履歴": state["comment_history"]
+            "目的": state["meeting_input"].purpose,
+            "アジェンダ": state["meeting_input"].agenda,
+            "参加者": state["meeting_input"].participants,
+            "発言履歴": state["meeting_input"].comment_history
         }
 
         response = model.generate_content(
@@ -328,10 +351,10 @@ def create_facilitator_node():
     
     def facilitate(state: GraphState) -> GraphState:
         prompt = {
-            "目的": state["purpose"],
-            "アジェンダ": state["agenda"],
-            "参加者": state["participants"],
-            "発言履歴": state["comment_history"],
+            "目的": state["meeting_input"].purpose,
+            "アジェンダ": state["meeting_input"].agenda,
+            "参加者": state["meeting_input"].participants,
+            "発言履歴": state["meeting_input"].comment_history,
             "評価結果": state["evaluation"]
         }
 
@@ -371,7 +394,7 @@ def create_meeting_feedback_graph():
     # 条件分岐の関数
     def should_create_agenda(state: GraphState) -> Dict[str, str]:
         # アジェンダが空または未設定の場合はアジェンダ生成ノードへ
-        if not state.get("agenda"):
+        if not state["meeting_input"].agenda:
             return {"next": "create_agenda"}
         return {"next": "summarize"}
     
@@ -398,10 +421,8 @@ def process_meeting_feedback(meeting_input: MeetingInput) -> ProcessMeetingFeedb
     """会議の状態を受け取り、フィードバックを生成"""
     # 初期状態の設定
     state = GraphState(
-        purpose=meeting_input.purpose,
-        agenda=meeting_input.agenda if meeting_input.agenda else [],
-        participants=meeting_input.participants,
-        comment_history=meeting_input.comment_history,
+        meeting_input=meeting_input,
+        new_agenda=None,
         facilitator_message=None,
         summary=None,
         evaluation=None,
@@ -416,7 +437,7 @@ def process_meeting_feedback(meeting_input: MeetingInput) -> ProcessMeetingFeedb
         return {
             "message": "アジェンダを作成しました。",
             "detail": {
-                "agenda": final_state.get("agenda", [])
+                "agenda": final_state["new_agenda"] if final_state["new_agenda"] else []
             }
         }
 
