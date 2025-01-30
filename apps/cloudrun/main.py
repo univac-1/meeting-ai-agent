@@ -6,7 +6,7 @@ from flask_cors import CORS
 
 from constants import FIRESTORE_MEETING_COLLECTION
 from message.message import post_message, get_message_history
-from meeting.meeting import create_meeting
+from meeting.meeting import create_meeting, update_meeting, MeetingUpdateFields
 from config import Config
 import json
 
@@ -29,7 +29,11 @@ def meeting():
     start_time = data["start_time"]
     end_time = data["end_time"]
     participants = data["participants"]
-    agenda = data["agenda"]
+    # アジェンダの変換
+    agenda = [
+        AgendaItem(topic=item["topic"], duration=item["duration"])
+        for item in data["agenda"]
+    ]
 
     # 会議の作成処理
     meeting_id = create_meeting(
@@ -72,7 +76,7 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
     
     # アジェンダの変換（存在する場合）
     agenda = None
-    if "agenda" in meeting_data and meeting_data["agenda"]:
+    if meeting_data.get("agenda"):
         agenda = [
             AgendaItem(topic=item["topic"], duration=item["duration"])
             for item in meeting_data["agenda"]
@@ -82,7 +86,7 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
     try:
         meeting_input = MeetingInput(
             purpose=meeting_data.get("meeting_purpose"),
-            agenda=agenda,
+            agenda=agenda,  # 既存のアジェンダがあればそれを使用、なければNone
             participants=meeting_data.get("participants", []),
             comment_history=message_history if isinstance(message_history, list) else [message_history],
             start_at=start_at,
@@ -93,28 +97,49 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
         print("message_history type:", type(message_history))
         print("message_history content:", message_history)
         return jsonify({"error": "Invalid meeting data format"}), 500
-        
+    
     feedback = process_meeting_feedback(meeting_input)
         
     # AIのフィードバックを発言履歴用DBに保存する
-    post_message(meeting_id, Config.get_ai_facilitator_name(), feedback["message"], meta={"voice": True, "role": "ai"})
-    detail = feedback.get("detail", {})
-    # detailsの処理
-    if detail.get("agenda") is not None:
+    post_message(meeting_id, Config.get_ai_facilitator_name(), feedback.message, meta={"voice": True, "role": "ai"})
+    detail = feedback.detail
+    
+    # 新しいアジェンダが生成された場合、会議情報を更新
+    if detail.agenda is not None:
+        # アジェンダメッセージの投稿
         message = "アジェンダです。\n"
-        message += "\n".join(detail.get("agenda"))
-        # TODO meetingのagenda列を更新する
-        post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
-    if detail.get("summary") is not None:
-        message = "要約です。\n"
-        message += detail.get("summary")
-        post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
-    if detail.get("evaluation") is not None:
-        message = "評価です。\n"
-        message += json.dumps(detail.get("evaluation"), ensure_ascii=False)
+        message += json.dumps([{"topic": item.topic, "duration": item.duration} for item in detail.agenda], ensure_ascii=False)
         post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
         
-    return jsonify({"data": feedback}), 200
+        # 会議情報の更新
+        update_data: MeetingUpdateFields = {
+            "agenda": [{"topic": item.topic, "duration": item.duration} for item in detail.agenda]
+        }
+        if not update_meeting(meeting_id, update_data):
+            print(f"Failed to update meeting agenda for meeting_id: {meeting_id}")
+    
+    if detail.summary is not None:
+        message = "要約です。\n"
+        message += detail.summary
+        post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
+    
+    if detail.evaluation is not None:
+        message = "評価です。\n"
+        message += json.dumps({
+            "engagement": detail.evaluation.engagement,
+            "concreteness": detail.evaluation.concreteness,
+            "direction": detail.evaluation.direction
+        }, ensure_ascii=False)
+        post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
+    
+    return jsonify({"data": {
+        "message": feedback.message,
+        "detail": {
+            "summary": detail.summary,
+            "evaluation": detail.evaluation.dict() if detail.evaluation else None,
+            "agenda": [{"topic": item.topic, "duration": item.duration} for item in detail.agenda] if detail.agenda else None
+        }
+    }}), 200
 
 @app.route('/message', methods=["POST"])
 def message():

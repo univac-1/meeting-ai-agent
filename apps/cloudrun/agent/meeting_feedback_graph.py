@@ -23,12 +23,13 @@ class MeetingInput(BaseModel):
     end_at: Optional[str] = None    # ISO 8601形式の文字列 (例: "2024-01-26T11:00:00")
 
 # 評価結果の型定義
-class EvaluationResult(TypedDict):
+class EvaluationResult(BaseModel):
     engagement: str
     concreteness: str
     direction: str
 
 # 状態の型定義
+# langgraphの仕様上TypedDictを利用
 class GraphState(TypedDict):
     meeting_input: MeetingInput  # 読み取り専用の入力データ
     new_agenda: Optional[List[AgendaItem]]  # 新しく生成されたアジェンダ
@@ -37,13 +38,13 @@ class GraphState(TypedDict):
     evaluation: Optional[EvaluationResult]
 
 # エージェントの処理結果詳細
-class DetailResponse(TypedDict):
-    summary: Optional[str]
-    evaluation: Optional[EvaluationResult]
-    agenda: Optional[List[str]]
+class DetailResponse(BaseModel):
+    summary: Optional[str] = None
+    evaluation: Optional[EvaluationResult] = None
+    agenda: Optional[List[AgendaItem]] = None
 
 # エージェントの処理結果
-class ProcessMeetingFeedbackResponse(TypedDict):
+class ProcessMeetingFeedbackResponse(BaseModel):
     message: str
     detail: DetailResponse
 
@@ -177,12 +178,13 @@ def create_agenda_node():
         try:
             result = json.loads(response.text)
             # LLMが生成した所要時間付きのアジェンダを使用
-            return {**state, "new_agenda": [
+            new_agenda = [
                 AgendaItem(
                     topic=item["トピック"],
                     duration=item["所要時間"]
                 ) for item in result["アジェンダ"]
-            ]}
+            ]
+            return {**state, "new_agenda": new_agenda}
         except Exception as e:
             print(f"Error processing agenda: {e}")
             return state
@@ -289,19 +291,15 @@ def create_evaluation_node():
 
         try:
             result = json.loads(response.text)
-            state["evaluation"] = {
-                "engagement": result["参加者の関与度"],
-                "concreteness": result["議論の具体性"],
-                "direction": result["議論の方向性"]
-            }
+            state["evaluation"] = EvaluationResult(
+                engagement=result["参加者の関与度"],
+                concreteness=result["議論の具体性"],
+                direction=result["議論の方向性"]
+            )
             return state
         except Exception as e:
             print(f"Error processing evaluation: {e}")
-            state["evaluation"] = {
-                "engagement": "",
-                "concreteness": "",
-                "direction": ""
-            }
+            state["evaluation"] = None
             return state
     
     return evaluate
@@ -434,20 +432,20 @@ def process_meeting_feedback(meeting_input: MeetingInput) -> ProcessMeetingFeedb
 
     # アジェンダ生成の場合
     if not meeting_input.agenda:
-        return {
-            "message": "アジェンダを作成しました。",
-            "detail": {
-                "agenda": final_state["new_agenda"] if final_state["new_agenda"] else []
-            }
-        }
+        return ProcessMeetingFeedbackResponse(
+            message="アジェンダを作成しました。",
+            detail=DetailResponse(
+                agenda=final_state["new_agenda"] if final_state["new_agenda"] else []
+            )
+        )
 
     # 通常のフィードバックの場合
-    return {
-        "message": final_state.get("facilitator_message", ""),
-        "detail": {
-            "summary": final_state.get("summary", ""),
-            "evaluation": final_state.get("evaluation", {})
-        }
-    }
+    return ProcessMeetingFeedbackResponse(
+        message=final_state.get("facilitator_message", ""),
+        detail=DetailResponse(
+            summary=final_state.get("summary", ""),
+            evaluation=final_state.get("evaluation")
+        )
+    )
 
 
