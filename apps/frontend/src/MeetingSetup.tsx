@@ -190,7 +190,7 @@ const MeetingSetup = () => {
                       <TextField
                         fullWidth
                         type="number"
-                        label="所要時間 (分)"
+                        label="所要時間(分)"
                         value={item.duration}
                         onChange={(e) => {
                           const newAgenda = [...agenda];
