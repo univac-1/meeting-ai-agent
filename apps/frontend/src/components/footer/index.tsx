@@ -1,10 +1,4 @@
-import {
-  MicIcon,
-  CamIcon,
-  MemberIcon,
-  TranscriptionIcon,
-  AiIcon,
-} from "../icons"
+import { MicIcon, CamIcon, MemberIcon, TranscriptionIcon, AiIcon, MinutesIcon } from "../icons"
 import { showAIModule } from "@/common"
 import { useSelector, useDispatch } from "react-redux"
 import {
@@ -13,6 +7,7 @@ import {
   setDialogRecordShow,
   setCaptionShow,
   setAIShow,
+  setMinutesShow,
   removeMenuItem,
   addMenuItem,
   setLocalAudioMute,
@@ -42,6 +37,7 @@ const Footer = (props: IFooterProps) => {
   const captionShow = useSelector((state: RootState) => state.global.captionShow)
   const tipSTTEnable = useSelector((state: RootState) => state.global.tipSTTEnable)
   const aiShow = useSelector((state: RootState) => state.global.aiShow)
+  const minutesShow = useSelector((state: RootState) => state.global.minutesShow)
   const sttData = useSelector((state: RootState) => state.global.sttData)
 
   useEffect(() => {
@@ -96,6 +92,15 @@ const Footer = (props: IFooterProps) => {
     dispatch(setCaptionShow(!captionShow))
   }
 
+  const onClickMinutesShow = () => {
+    dispatch(setMinutesShow(!minutesShow))
+    if (minutesShow) {
+      dispatch(removeMenuItem("Minutes"))
+    } else {
+      dispatch(addMenuItem("Minutes"))
+    }
+  }
+
   const onClickAiShow = () => {
     dispatch(setAIShow(!aiShow))
     if (aiShow) {
@@ -136,6 +141,11 @@ const Footer = (props: IFooterProps) => {
         <span className={`${styles.item}`} onClick={onClickDialogRecord}>
           <TranscriptionIcon active={dialogRecordShow}></TranscriptionIcon>
           <span className={styles.text}>Conversation History</span>
+        </span>
+        {/* minutes */}
+        <span className={styles.item} onClick={onClickMinutesShow}>
+          <MinutesIcon active={minutesShow}></MinutesIcon>
+          <span className={styles.text}>Minutes</span>
         </span>
         {/* ai */}
         {showAIModule() ? (

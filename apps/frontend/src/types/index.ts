@@ -1,6 +1,6 @@
 import { ICameraVideoTrack, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
 
-export type MenuType = "AI" | "DialogRecord"
+export type MenuType = "AI" | "DialogRecord" | "Minutes"
 export type STTDataType = "transcribe" | "translate"
 export type DialogLanguageType = "live" | "translate"
 export type InputStatuses = "warning" | "error" | ""
@@ -87,8 +87,8 @@ export interface IMessage {
 }
 
 export interface ICommentItem {
-  message: string;
-  speak_at: string;
-  speaker: string;
-  detail: any | null;
+  message: string
+  speak_at: string
+  speaker: string
+  detail: any | null
 }

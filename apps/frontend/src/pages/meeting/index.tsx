@@ -1,5 +1,5 @@
-import "core-js/stable";
-import "regenerator-runtime/runtime";
+import "core-js/stable"
+import "regenerator-runtime/runtime"
 
 import { useMount, useMessage } from "@/common"
 import { IUserInfo, IUserData, ILanguageSelect, ISttData } from "@/types"
@@ -62,6 +62,7 @@ const MeetingPage = () => {
   const memberListShow = useSelector((state: RootState) => state.global.memberListShow)
   const dialogRecordShow = useSelector((state: RootState) => state.global.dialogRecordShow)
   const captionShow = useSelector((state: RootState) => state.global.captionShow)
+  const minutesShow = useSelector((state: RootState) => state.global.minutesShow)
   const aiShow = useSelector((state: RootState) => state.global.aiShow)
   const sttData = useSelector((state: RootState) => state.global.sttData)
   const { userId, userName } = userInfo
@@ -162,7 +163,7 @@ const MeetingPage = () => {
             headers: {
               "Content-type": "application/json; charset=UTF-8",
             },
-          }
+          },
         )
         .then((response) => console.log(response.data))
         .catch((error) => console.error("Error:", error))
@@ -316,7 +317,7 @@ const MeetingPage = () => {
         <section className={styles.center}>
           <CenterArea data={curUserData}></CenterArea>
         </section>
-        {dialogRecordShow || aiShow ? (
+        {dialogRecordShow || aiShow || minutesShow ? (
           <section className={styles.right}>
             <Menu></Menu>
           </section>
