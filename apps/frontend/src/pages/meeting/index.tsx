@@ -120,11 +120,11 @@ const MeetingPage = () => {
           token: sttData.token ?? "",
         })
         dispatch(setSubtitles([]))
-        dispatch(addMessage({ content: t("setting.sttStart"), type: "success" }))
+        dispatch(addMessage({ content: "STT started", type: "success" }))
       } else if (sttData.status == "end") {
         sttManager.removeOption()
         dispatch(setCaptionShow(false))
-        dispatch(addMessage({ content: t("setting.sttStop"), type: "success" }))
+        dispatch(addMessage({ content: "STT stopped", type: "success" }))
       }
     }
     // do not put isMounted in the dependencies
@@ -235,6 +235,7 @@ const MeetingPage = () => {
   }, [simpleUserMap, userInfo, localTracks, centerUserId, rtcUserMap])
 
   const curUserData = useMemo(() => {
+    console.log("[test] curUserData", userDataList)
     return userDataList[0] as IUserData
   }, [userDataList])
 
