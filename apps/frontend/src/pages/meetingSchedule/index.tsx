@@ -115,7 +115,7 @@ const MeetingSchedulePage = () => {
     }
   }
 
-  const onClickJoin = () => {
+  const onClickSave = () => {
     handleApiCall()
   }
 
@@ -228,11 +228,13 @@ const MeetingSchedulePage = () => {
             </div>
           ))}
         </div>
-        <div className={styles.btn} onClick={onClickJoin}>
-          Save
-        </div>
-        <div className={styles.cancelBtn} onClick={onClickCancel}>
-          Cancel
+        <div className={styles.btnWrapper}>
+          <span className={styles.btnCancel} onClick={onClickCancel}>
+           Cancel
+          </span>
+          <span className={styles.btnSave} onClick={onClickSave}>
+            Save
+          </span>
         </div>
       </section>
     </div>

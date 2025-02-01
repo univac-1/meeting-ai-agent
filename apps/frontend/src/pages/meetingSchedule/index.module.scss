@@ -9,7 +9,7 @@
 
   .content {
     position: relative;
-    width: 368px;
+    width: 500px;
     margin: 160px auto;
     padding: 24px 24px 40px 24px;
     flex-direction: column;
@@ -168,6 +168,53 @@
     .item label {
       display: block;
       margin-bottom: 8px;
+    }
+
+    .btnWrapper {
+      margin-top: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+  
+      .btnCancel {
+        display: flex;
+        height: 36px;
+        width: 160px;
+        flex: 0 0 160px;
+        padding: 8px 14px;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        border-radius: 6px;
+        background: var(--Primary-50-T, #eceefe);
+        color: var(--primary-500-base, #3d53f5);
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 20px;
+        /* 142.857% */
+        cursor: pointer;
+        box-sizing: border-box;
+      }
+  
+      .btnSave {
+        display: flex;
+        height: 36px;
+        padding: 8px 14px;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        width: 160px;
+        flex: 0 0 160px;
+        border-radius: 6px;
+        background: var(--primary-500-base, #3d53f5);
+        color: var(---white, #fff);
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 20px;
+        /* 142.857% */
+        cursor: pointer;
+        box-sizing: border-box;
+      }
     }
   }
 }

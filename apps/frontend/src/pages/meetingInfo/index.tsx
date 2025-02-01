@@ -84,10 +84,10 @@ const MeetingInfoPage = () => {
           <div className={styles.text}>Meeting Info</div>
         </div>
         <Table columns={columns} dataSource={dataSource} pagination={false} showHeader={false} />
-        <div className={styles.buttonContainer}>
-          <div className={styles.cancelBtn} onClick={() => nav('/')}>
-            back
-          </div>
+        <div className={styles.btnWrapper}>
+          <span className={styles.btnBack} onClick={() => nav('/')}>
+           Back
+          </span>
         </div>
       </section>
     </div>

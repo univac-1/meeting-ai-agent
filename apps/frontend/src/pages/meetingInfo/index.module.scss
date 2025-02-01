@@ -164,5 +164,33 @@
       cursor: pointer;
       border: 1px solid #344054;
     }
+
+    .btnWrapper {
+      margin-top: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+  
+      .btnBack {
+        display: flex;
+        height: 36px;
+        width: 160px;
+        flex: 0 0 160px;
+        padding: 8px 14px;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        border-radius: 6px;
+        background: var(--Primary-50-T, #eceefe);
+        color: var(--primary-500-base, #3d53f5);
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 20px;
+        /* 142.857% */
+        cursor: pointer;
+        box-sizing: border-box;
+      }
+  
+    }
   }
 }
