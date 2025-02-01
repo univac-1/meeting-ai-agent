@@ -1,10 +1,4 @@
-import {
-  MicIcon,
-  CamIcon,
-  MemberIcon,
-  TranscriptionIcon,
-  AiIcon,
-} from "../icons"
+import { MicIcon, CamIcon, MemberIcon, TranscriptionIcon, AiIcon, MinutesIcon } from "../icons"
 import { showAIModule } from "@/common"
 import { useSelector, useDispatch } from "react-redux"
 import {
@@ -96,6 +90,15 @@ const Footer = (props: IFooterProps) => {
     dispatch(setCaptionShow(!captionShow))
   }
 
+  const onClickMinutesShow = () => {
+    dispatch(setAIShow(!aiShow))
+    if (aiShow) {
+      dispatch(removeMenuItem("AI"))
+    } else {
+      dispatch(addMenuItem("AI"))
+    }
+  }
+
   const onClickAiShow = () => {
     dispatch(setAIShow(!aiShow))
     if (aiShow) {
@@ -136,6 +139,11 @@ const Footer = (props: IFooterProps) => {
         <span className={`${styles.item}`} onClick={onClickDialogRecord}>
           <TranscriptionIcon active={dialogRecordShow}></TranscriptionIcon>
           <span className={styles.text}>Conversation History</span>
+        </span>
+        {/* minutes */}
+        <span className={styles.item} onClick={onClickMinutesShow}>
+          <MinutesIcon active={aiShow}></MinutesIcon>
+          <span className={styles.text}>Minutes</span>
         </span>
         {/* ai */}
         {showAIModule() ? (
