@@ -1,15 +1,14 @@
 from flask import Flask, request, jsonify
 from typing import Dict
 
-from cloudrun.agent.feedback_agent import process_meeting_feedback, MeetingInput, AgendaItem as FeedbackAgendaItem
 from flask_cors import CORS
 
-from message.message import post_message, get_message_history
-from meeting.meeting import create_meeting, update_meeting, MeetingUpdateFields, AgendaItem as MeetingAgendaItem
+from message.message import post_message
+from meeting.meeting import create_meeting, AgendaItem as MeetingAgendaItem
 from config import Config
-from agent.intervention_service import handle_message_intervention, generate_intervention_message
+from agent.intervention_service import generate_intervention_message
 from agent.intervention_request_service import request_intervention
-from cloudrun.agent.feedback_service import generate_feedback
+from agent.feedback_service import generate_feedback
 import json
 FIRESTORE_MEETING_COLLECTION = Config.FIRESTORE_MEETING_COLLECTION
 
@@ -26,6 +25,7 @@ def hello_world():
 @app.route('/meeting', methods=["POST"])
 def meeting():
     data = request.get_json()  # リクエストからデータを取得
+    print(data)
     meeting_name = data["meeting_name"]
     meeting_purpose = data["meeting_purpose"]
     start_date = data["start_date"]
@@ -77,7 +77,7 @@ def message():
     
     return jsonify({"data": "OK"}), 201
 
-@app.route('/intervention/<meeting_id>', methods=["GET"])
+@app.route('/meeting/<meeting_id>/intervention', methods=["GET"])
 def allow_intervention(meeting_id: str):
     """介入許可を受け取り、介入メッセージを生成する"""
     # 介入メッセージを生成して保存

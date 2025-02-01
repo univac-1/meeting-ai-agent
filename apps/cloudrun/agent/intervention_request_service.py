@@ -1,5 +1,6 @@
 from typing import Optional, Tuple
 from datetime import datetime
+import pytz
 from config import Config
 from message.message import get_message_history
 from models import InterventionStatus, InterventionRequest, MeetingInput
@@ -14,19 +15,22 @@ def _create_intervention_request(meeting_id: str, reason: str) -> bool:
     db = Config.get_db_client()
     doc_ref = db.collection(FIRESTORE_MEETING_COLLECTION).document(meeting_id)
     
-    intervention_request = InterventionRequest(
-        status=InterventionStatus.PENDING,
-        reason=reason,
-        created_at=datetime.now(),
-        updated_at=datetime.now()
-    )
+    tz_japan = pytz.timezone("Asia/Tokyo")
+    now = datetime.now(tz_japan).strftime("%Y-%m-%d %H:%M:%S")
+    
+    intervention_request = {
+        "status": InterventionStatus.PENDING,
+        "reason": reason,
+        "created_at": now,
+        "updated_at": now
+    }
     
     doc_ref.update({
-        "intervention_request": intervention_request.dict()
+        "intervention_request": intervention_request
     })
     return True
 
-def _get_intervention_request(meeting_id: str) -> Optional[InterventionRequest]:
+def _get_intervention_request(meeting_id: str) -> Optional[dict]:
     """介入リクエストを取得する"""
     db = Config.get_db_client()
     doc_ref = db.collection(FIRESTORE_MEETING_COLLECTION).document(meeting_id)
@@ -36,11 +40,7 @@ def _get_intervention_request(meeting_id: str) -> Optional[InterventionRequest]:
         return None
     
     meeting_data = doc.to_dict()
-    intervention_data = meeting_data.get("intervention_request")
-    if not intervention_data:
-        return None
-        
-    return InterventionRequest(**intervention_data)
+    return meeting_data.get("intervention_request")
 
 def _get_meeting_data_for_intervention(meeting_id: str) -> Optional[MeetingInput]:
     """介入のための会議データを取得する"""
@@ -79,7 +79,17 @@ def _check_if_intervention_needed(meeting_id: str) -> Tuple[bool, Optional[str]]
         if intervention_request.get("status") == InterventionStatus.PENDING:
             return False, None
         if intervention_request.get("status") == InterventionStatus.COMPLETED:
-            if (datetime.now() - intervention_request.get("updated_at")).total_seconds() < AGENT_INTERVENTION_SPAN_SECONDS:
+            # 文字列形式の日時を比較
+            tz_japan = pytz.timezone("Asia/Tokyo")
+            now = datetime.now(tz_japan).strftime("%Y-%m-%d %H:%M:%S")
+            last_update = intervention_request.get("updated_at")
+            
+            time_diff = (
+                datetime.strptime(now, "%Y-%m-%d %H:%M:%S") - 
+                datetime.strptime(last_update, "%Y-%m-%d %H:%M:%S")
+            ).total_seconds()
+            
+            if time_diff < AGENT_INTERVENTION_SPAN_SECONDS:
                 return False, None
 
     # 会議データを取得
@@ -93,6 +103,7 @@ def _check_if_intervention_needed(meeting_id: str) -> Tuple[bool, Optional[str]]
 def request_intervention(meeting_id: str) -> bool:
     """メッセージに対する介入処理を行う"""
     should_intervene_flag, reason = _check_if_intervention_needed(meeting_id)
+    print(should_intervene_flag, reason)
     
     if not should_intervene_flag:
         return False

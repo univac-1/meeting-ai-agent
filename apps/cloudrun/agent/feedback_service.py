@@ -2,7 +2,7 @@ from typing import Dict, Optional
 import json
 from config import Config
 from message.message import get_message_history, post_message
-from cloudrun.agent.feedback_agent import process_meeting_feedback, MeetingInput, AgendaItem as FeedbackAgendaItem
+from agent.feedback_agent import process_meeting_feedback, MeetingInput, AgendaItem as FeedbackAgendaItem
 
 FIRESTORE_MEETING_COLLECTION = Config.FIRESTORE_MEETING_COLLECTION
 

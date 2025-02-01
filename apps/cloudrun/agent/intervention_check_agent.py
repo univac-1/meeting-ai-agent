@@ -99,6 +99,7 @@ def should_intervene(meeting_input: MeetingInput) -> Tuple[bool, str]:
         
         # JSONレスポンスをパース
         result = json.loads(response.text)
+        print(result)
         return result.get("intervention_needed", False), result.get("reason")
         
     except Exception as e:

@@ -1,11 +1,12 @@
 from typing import Optional, Dict
 from datetime import datetime
-from cloudrun.agent.feedback_agent import process_meeting_feedback, MeetingInput
+from agent.feedback_agent import process_meeting_feedback, MeetingInput
 from config import Config
 from message.message import get_message_history
 from .intervention_request_service import InterventionStatus, InterventionRequest
 from message.message import post_message
 import json
+import pytz
 
 FIRESTORE_MEETING_COLLECTION = Config.FIRESTORE_MEETING_COLLECTION
 
@@ -13,10 +14,13 @@ def _complete_intervention(meeting_id: str) -> bool:
     """介入リクエストを完了状態に更新する"""
     db = Config.get_db_client()
     doc_ref = db.collection(FIRESTORE_MEETING_COLLECTION).document(meeting_id)
+
+    tz_japan = pytz.timezone("Asia/Tokyo")
+    now = datetime.now(tz_japan).strftime("%Y-%m-%d %H:%M:%S")
     
     doc_ref.update({
         "intervention_request.status": InterventionStatus.COMPLETED,
-        "intervention_request.updated_at": datetime.now()
+        "intervention_request.updated_at": now
     })
     return True
 

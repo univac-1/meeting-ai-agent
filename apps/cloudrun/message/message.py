@@ -29,6 +29,12 @@ def get_message_history(meeting_id):
 
     message_history = []
     for comment in comments:
-        message_history.append(comment.to_dict())
+        data = comment.to_dict()
+        # AIの発言以外をフィルタリング
+        meta = data.get("meta")
+        if meta is None or meta.get("role", '') != "ai":
+            message_history.append(data)
+
+    print(message_history)
 
     return message_history
