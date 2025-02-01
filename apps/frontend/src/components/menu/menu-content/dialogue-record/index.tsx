@@ -6,6 +6,7 @@ import { downloadText, genContentText } from "@/common"
 import LanguageShowDialog from "@/components/dialog/language-show"
 import LanguageStorageDialog from "@/components/dialog/language-storage"
 import RecordHeader from "./record-header"
+import RecordFooter from "./record-footer"
 
 import styles from "./index.module.scss"
 import { useEffect, useMemo, useRef, useState } from "react"
@@ -33,32 +34,9 @@ const DialogueRecord = (props: DialogueRecordProps) => {
 
   return (
     <div className={styles.dialogRecord}>
+      <RecordHeader></RecordHeader>
       <RecordContent></RecordContent>
-      {sttSubtitles.length ? (
-        <div className={styles.btnWrapper}>
-          <div className={styles.btn} onClick={onClickStorage}>
-            Storage
-          </div>
-        </div>
-      ) : null}
-      <LanguageShowDialog
-        open={openLanguageShowDialog}
-        onCancel={() => {
-          setOpenLanguageShowDialog(false)
-        }}
-        onOk={() => {
-          setOpenLanguageShowDialog(false)
-        }}
-      ></LanguageShowDialog>
-      <LanguageStorageDialog
-        open={openLanguageStorageDialog}
-        onCancel={() => {
-          setOpenLanguageStorageDialog(false)
-        }}
-        onOk={() => {
-          setOpenLanguageStorageDialog(false)
-        }}
-      ></LanguageStorageDialog>
+      <RecordFooter></RecordFooter>
     </div>
   )
 }

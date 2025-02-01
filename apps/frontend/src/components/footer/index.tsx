@@ -2,10 +2,8 @@ import {
   MicIcon,
   CamIcon,
   MemberIcon,
-  CaptionIcon,
   TranscriptionIcon,
   AiIcon,
-  ArrowUpIcon,
 } from "../icons"
 import { showAIModule } from "@/common"
 import { useSelector, useDispatch } from "react-redux"
@@ -22,11 +20,8 @@ import {
   addMessage,
   setTipSTTEnable,
 } from "@/store/reducers/global"
-import AiAgentDialog from "../dialog/ai-agent"
-import CaptionPopover from "./caption-popover"
-import { Popover } from "antd"
 import { RootState } from "@/store"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 
 import styles from "./index.module.scss"
@@ -48,7 +43,6 @@ const Footer = (props: IFooterProps) => {
   const tipSTTEnable = useSelector((state: RootState) => state.global.tipSTTEnable)
   const aiShow = useSelector((state: RootState) => state.global.aiShow)
   const sttData = useSelector((state: RootState) => state.global.sttData)
-  const [showAIAgent, setAIAgent] = useState(false)
 
   useEffect(() => {
     if (tipSTTEnable) {
@@ -111,10 +105,6 @@ const Footer = (props: IFooterProps) => {
     }
   }
 
-  const toggleAIAgentDialog = () => {
-    setAIAgent(!showAIAgent)
-  }
-
   const onClickEnd = () => {
     if (location.search) {
       nav(`/?${location.search.slice(1)}`)
@@ -147,13 +137,6 @@ const Footer = (props: IFooterProps) => {
           <TranscriptionIcon active={dialogRecordShow}></TranscriptionIcon>
           <span className={styles.text}>Conversation History</span>
         </span>
-        {/* ai agent */}
-        <Popover placement="top" content="Please start transcription first" open={tipSTTEnable}>
-          <span className={`${styles.item}`} onClick={toggleAIAgentDialog}>
-            <AiIcon></AiIcon>
-            <span className={`${styles.text}`}>AI Agent</span>
-          </span>
-        </Popover>
         {/* ai */}
         {showAIModule() ? (
           <span className={styles.item} onClick={onClickAiShow}>
@@ -165,11 +148,6 @@ const Footer = (props: IFooterProps) => {
       <span className={styles.end} onClick={onClickEnd}>
         Close Conversation
       </span>
-      <AiAgentDialog
-        open={showAIAgent}
-        onOk={() => setAIAgent(false)}
-        onCancel={() => setAIAgent(false)}
-      ></AiAgentDialog>
     </footer>
   )
 }
