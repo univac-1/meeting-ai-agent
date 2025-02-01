@@ -1,13 +1,13 @@
 body {
   font-family: "PingFang SC";
-  overflow: hidden;
+  overflow: auto; /* スクロールを可能にする */
 }
 
 #root {
   position: relative;
   width: 100vw;
   height: 100vh;
-  overflow: hidden;
+  overflow: auto; /* スクロールを可能にする */
 }
 
 svg {
@@ -18,4 +18,11 @@ svg {
   svg {
     cursor: not-allowed;
   }
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: auto; /* 全体のスクロールを可能にする */
 }

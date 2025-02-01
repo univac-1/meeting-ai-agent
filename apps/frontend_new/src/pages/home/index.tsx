@@ -10,7 +10,7 @@ const HomePage = () => {
   const { t, i18n } = useTranslation()
 
   const onClickSchedule = () => {
-    nav("/schedule")
+    nav("/meeting/schedule")
   }
 
   const onClickJoin = () => {

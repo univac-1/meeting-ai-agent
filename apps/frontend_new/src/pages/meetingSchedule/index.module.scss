@@ -1,17 +1,16 @@
-.schedulePage {
+.meetingSchedulePage {
   position: relative;
   width: 100%;
-  height: 100%;
+  min-height: 100vh;
   background: url("../../assets/login_background.jpg");
   background-size: cover;
   background-position: center;
+  overflow: auto;
 
   .content {
-    position: absolute;
+    position: relative;
     width: 368px;
-    top: 160px;
-    left: 50%;
-    transform: translate(-50%, 0);
+    margin: 160px auto;
     padding: 24px 24px 40px 24px;
     flex-direction: column;
     align-items: center;
@@ -21,6 +20,7 @@
     background: #fff;
     box-shadow: 0px 32px 64px -12px rgba(8, 15, 52, 0.12);
     box-sizing: border-box;
+    overflow: visible;
 
     .top {
       display: flex;
@@ -99,6 +99,19 @@
       margin-top: 24px;
     }
 
+    .agendaRow {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .agendaList {
+      margin-top: 24px;
+      margin-bottom: 24px;
+    }
+
     .btn {
       margin-top: 24px;
       display: flex;
@@ -120,6 +133,28 @@
       cursor: pointer;
     }
 
+    .cancelBtn {
+      margin-top: 24px;
+      display: flex;
+      padding: 8px 12px;
+      justify-content: center;
+      align-items: center;
+      align-self: stretch;
+      border-radius: 8px;
+      background: var(--primary-500-base, #fff);
+      box-shadow: 0px 1px 2px 0px rgba(16, 24, 40, 0.05);
+      color: var(--Grey-800, #344054);
+      font-family: "PingFang SC";
+      font-size: 16px;
+      font-style: normal;
+      font-weight: 500;
+      line-height: 24px;
+      text-align: center;
+      box-sizing: border-box;
+      cursor: pointer;
+      border: 1px solid #344054;
+    }
+
     .version {
       margin-top: 32px;
       color: #6d7278;
@@ -128,6 +163,11 @@
       font-weight: 400;
       line-height: 22px;
       text-align: center;
+    }
+
+    .item label {
+      display: block;
+      margin-bottom: 8px;
     }
   }
 }

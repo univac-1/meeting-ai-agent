@@ -123,7 +123,6 @@ const JoinPage = () => {
         <div className={styles.btn} onClick={onClickJoin}>
           {t("join.join")}
         </div>
-        <div className={styles.version}>Version {version}</div>
       </section>
     </div>
   )

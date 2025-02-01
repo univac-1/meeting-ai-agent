@@ -36,7 +36,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import axios from "axios"
-import { CLOUD_RUN_ENDPOINT } from "../../config"
+import { CLOUD_RUN_ENDPOINT } from "@/config"
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition"
 
 import styles from "./index.module.scss"
