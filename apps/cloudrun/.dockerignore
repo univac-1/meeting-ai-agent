@@ -1,0 +1,10 @@
+# テストディレクトリを除外
+test/
+__pycache__/
+*.pyc
+
+# その他の一般的な除外ファイル
+.git
+.gitignore
+.env
+README.md 
