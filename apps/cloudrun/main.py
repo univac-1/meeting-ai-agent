@@ -1,11 +1,11 @@
 from flask import Flask, request, jsonify
 from typing import Dict
 
-from agent.meeting_feedback_graph import process_meeting_feedback, MeetingInput, AgendaItem
+from agent.meeting_feedback_graph import process_meeting_feedback, MeetingInput, AgendaItem as FeedbackAgendaItem
 from flask_cors import CORS
 
 from message.message import post_message, get_message_history
-from meeting.meeting import create_meeting, update_meeting, MeetingUpdateFields
+from meeting.meeting import create_meeting, update_meeting, MeetingUpdateFields, AgendaItem as MeetingAgendaItem
 from config import Config
 import json
 FIRESTORE_MEETING_COLLECTION = Config.FIRESTORE_MEETING_COLLECTION
@@ -30,14 +30,14 @@ def meeting():
     end_time = data["end_time"]
     participants = data["participants"]
     # アジェンダの変換
-    agenda = [
-        AgendaItem(topic=item["topic"], duration=item["duration"])
+    meeting_agenda = [
+        MeetingAgendaItem(topic=item["topic"], duration=int(item["duration"]))
         for item in data["agenda"]
     ]
 
     # 会議の作成処理
     meeting_id = create_meeting(
-        meeting_name, participants, agenda, start_date, start_time, end_time, meeting_purpose
+        meeting_name, participants, meeting_agenda, start_date, start_time, end_time, meeting_purpose
     )
 
     return jsonify({"data": {"meeting_id": meeting_id}}), 201
@@ -78,7 +78,7 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
     agenda = None
     if meeting_data.get("agenda"):
         agenda = [
-            AgendaItem(topic=item["topic"], duration=item["duration"])
+            FeedbackAgendaItem(topic=item["topic"], duration=item["duration"])
             for item in meeting_data["agenda"]
         ]
 
@@ -101,7 +101,7 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
     feedback = process_meeting_feedback(meeting_input)
         
     # AIのフィードバックを発言履歴用DBに保存する
-    post_message(meeting_id, Config.get_ai_facilitator_name(), feedback.message, meta={"voice": True, "role": "ai"})
+    post_message(meeting_id, Config.get_ai_facilitator_name(), feedback.message, meta={"role": "ai", "type": "feedback"})
     detail = feedback.detail
     
     # 新しいアジェンダが生成された場合、会議情報を更新
@@ -109,7 +109,7 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
         # アジェンダメッセージの投稿
         message = "アジェンダです。\n"
         message += json.dumps([{"topic": item.topic, "duration": item.duration} for item in detail.agenda], ensure_ascii=False)
-        post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
+        post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai", "type": "agenda"})
         
         # 会議情報の更新
         update_data: MeetingUpdateFields = {
@@ -121,7 +121,7 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
     if detail.summary is not None:
         message = "要約です。\n"
         message += detail.summary
-        post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
+        post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai", "type": "summary"})
     
     if detail.evaluation is not None:
         message = "評価です。\n"
@@ -130,13 +130,13 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
             "concreteness": detail.evaluation.concreteness,
             "direction": detail.evaluation.direction
         }, ensure_ascii=False)
-        post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
+        post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai", "type": "evaluation"})
     
     return jsonify({"data": {
         "message": feedback.message,
         "detail": {
             "summary": detail.summary,
-            "evaluation": detail.evaluation.dict() if detail.evaluation else None,
+            "evaluation": detail.evaluation.model_dump() if detail.evaluation else None,
             "agenda": [{"topic": item.topic, "duration": item.duration} for item in detail.agenda] if detail.agenda else None
         }
     }}), 200
