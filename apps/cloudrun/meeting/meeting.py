@@ -1,9 +1,9 @@
 import uuid
 from typing import List, Optional
 from typing_extensions import TypedDict
-from constants import FIRESTORE_MEETING_COLLECTION
 from config import Config
 
+FIRESTORE_MEETING_COLLECTION = Config.FIRESTORE_MEETING_COLLECTION
 
 # アジェンダ項目の型定義
 class AgendaItem(TypedDict):
