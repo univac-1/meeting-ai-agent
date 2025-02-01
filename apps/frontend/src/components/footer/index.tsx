@@ -4,7 +4,6 @@ import {
   MemberIcon,
   CaptionIcon,
   TranscriptionIcon,
-  SettingIcon,
   AiIcon,
   ArrowUpIcon,
 } from "../icons"
@@ -23,7 +22,6 @@ import {
   addMessage,
   setTipSTTEnable,
 } from "@/store/reducers/global"
-import LanguageSettingDialog from "../dialog/language-setting"
 import AiAgentDialog from "../dialog/ai-agent"
 import CaptionPopover from "./caption-popover"
 import { Popover } from "antd"
@@ -50,7 +48,6 @@ const Footer = (props: IFooterProps) => {
   const tipSTTEnable = useSelector((state: RootState) => state.global.tipSTTEnable)
   const aiShow = useSelector((state: RootState) => state.global.aiShow)
   const sttData = useSelector((state: RootState) => state.global.sttData)
-  const [showLanguageSetting, setShowLanguageSetting] = useState(false)
   const [showAIAgent, setAIAgent] = useState(false)
 
   useEffect(() => {
@@ -118,10 +115,6 @@ const Footer = (props: IFooterProps) => {
     setAIAgent(!showAIAgent)
   }
 
-  const toggleLanguageSettingDialog = () => {
-    setShowLanguageSetting(!showLanguageSetting)
-  }
-
   const onClickEnd = () => {
     if (location.search) {
       nav(`/?${location.search.slice(1)}`)
@@ -149,19 +142,6 @@ const Footer = (props: IFooterProps) => {
           <MemberIcon active={memberListShow}></MemberIcon>
           <span className={styles.text}>Participants List</span>
         </span>
-        {/* caption */}
-        <span
-          className={`${styles.item} ${!hasSttStarted ? "disabled" : ""}`}
-          onClick={onClickCaption}
-        >
-          <CaptionIcon disabled={!hasSttStarted} active={captionShow}></CaptionIcon>
-          <span className={styles.text}>{captionText}</span>
-        </span>
-        <CaptionPopover>
-          <span className={styles.arrowWrapper}>
-            <ArrowUpIcon width={16} height={16}></ArrowUpIcon>
-          </span>
-        </CaptionPopover>
         {/* dialog */}
         <span className={`${styles.item}`} onClick={onClickDialogRecord}>
           <TranscriptionIcon active={dialogRecordShow}></TranscriptionIcon>
@@ -172,13 +152,6 @@ const Footer = (props: IFooterProps) => {
           <span className={`${styles.item}`} onClick={toggleAIAgentDialog}>
             <AiIcon></AiIcon>
             <span className={`${styles.text}`}>AI Agent</span>
-          </span>
-        </Popover>
-        {/* language */}
-        <Popover placement="top" content="Please start transcription first" open={tipSTTEnable}>
-          <span className={`${styles.item}`} onClick={toggleLanguageSettingDialog}>
-            <SettingIcon></SettingIcon>
-            <span className={`${styles.text}`}>Languages Setting</span>
           </span>
         </Popover>
         {/* ai */}
