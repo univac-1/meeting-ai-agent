@@ -15,8 +15,10 @@ from meeting.meeting import (
     MeetingUpdateFields,
     AgendaItem as MeetingAgendaItem,
 )
+from minutes.minutes import update_minutes
 from config import Config
 import json
+
 
 app = Flask(__name__)
 app.json.ensure_ascii = False
@@ -225,6 +227,8 @@ def message():
     message = data.get("message")
 
     post_message(meeting_id, speaker, message)
+
+    update_minutes(meeting_id, message)
 
     return jsonify({"data": "OK"}), 201
 
