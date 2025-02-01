@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
         "@": "/src",
       },
     },
-    base: genBaseUrl(mode),
+    base: "/",
     build: {
       // cssCodeSplit: false,
       // target: "es2015",
