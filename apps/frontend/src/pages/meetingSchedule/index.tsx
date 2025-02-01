@@ -64,17 +64,22 @@ const MeetingSchedulePage = () => {
   const handleApiCall = async () => {
     try {
       const response = await axios.post(`${CLOUD_RUN_ENDPOINT}/meeting`, {
-        meetingName,
+        meeting_name: meetingName,
+        meeting_purpose: meetingPurpose,
+        start_date: startDate.format("YYYY-MM-DD"),
+        start_time: startTime.format("HH:mm"),
+        end_time: endTime.format("HH:mm"),
         participants,
-        agendaItems,
-        startDate: startDate.format("YYYY-MM-DD"),
-        startTime: startTime.format("HH:mm"),
-        endTime: endTime.format("HH:mm"),
+        agenda: agendaItems.map(item => ({ topic: item.topic, duration: item.duration })),
       });
-      console.log("API response:", response.data);
-      const meetingId = response.data.meeting_id;
-      messageApi.success("Meeting scheduled successfully!");
-      nav(`/meeting/${meetingId}`);
+      
+      const meetingId = response.data?.data?.meeting_id;
+      if (meetingId) {
+        messageApi.success("Meeting scheduled successfully!");
+        nav(`/meeting/${meetingId}`);
+      } else {
+        throw new Error("Meeting ID is undefined");
+      }
     } catch (error) {
       console.error("Error calling API:", error);
       messageApi.error("Failed to schedule meeting.");
