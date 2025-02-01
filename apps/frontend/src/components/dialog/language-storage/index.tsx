@@ -4,7 +4,6 @@ import { Modal, Alert, Select, Space } from "antd"
 import { ITextItem, LangDataType } from "@/types"
 import { LANGUAGE_OPTIONS, downloadText, genContentText } from "@/common"
 import { addMessage } from "@/store/reducers/global"
-import { useTranslation } from "react-i18next"
 
 import styles from "./index.module.scss"
 import { useMemo, useState } from "react"
@@ -38,7 +37,6 @@ export const genTranslateContentText = (lang: string, type: LangDataType, list: 
 const LanguageStorageDialog = (props: ILanguageSettingDialogProps) => {
   const dispatch = useDispatch()
   const { open, onOk, onCancel } = props
-  const { t } = useTranslation()
   const options = useSelector((state: RootState) => state.global.options)
   const languageSelect = useSelector((state: RootState) => state.global.languageSelect)
   const sttSubtitles = useSelector((state: RootState) => state.global.sttSubtitles)
@@ -104,7 +102,7 @@ const LanguageStorageDialog = (props: ILanguageSettingDialogProps) => {
       const name = `${channel}_${language}`
       const content = genTranslateContentText(language, curType, sttSubtitles)
       downloadText(`${name}.txt`, content)
-      dispatch(addMessage({ type: "success", content: t("storage.success") }))
+      dispatch(addMessage({ type: "success", content: "Storage success" }))
     }
   }
 
@@ -115,14 +113,14 @@ const LanguageStorageDialog = (props: ILanguageSettingDialogProps) => {
   return (
     <Modal
       width={600}
-      title={t("dialog.languageExport")}
+      title="Language Export"
       open={open}
       footer={null}
       onOk={onOk}
       onCancel={onCancel}
     >
       <section className={styles.content}>
-        <div className={styles.textTop}>{t("dialog.languageExportTip")}</div>
+        <div className={styles.textTop}>Language Export Tip</div>
         <div className={styles.section}>
           <Select
             value={language}
@@ -134,7 +132,7 @@ const LanguageStorageDialog = (props: ILanguageSettingDialogProps) => {
       </section>
       <div className={styles.btnWrapper}>
         <span className={styles.btn} onClick={onClickBtn}>
-          {t("confirm")}
+          Confirm
         </span>
       </div>
     </Modal>

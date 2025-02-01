@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react"
 import { Modal, Alert, Select, Space } from "antd"
 import { LANGUAGE_OPTIONS } from "@/common"
 import { setRecordLanguageSelect, addMessage } from "@/store/reducers/global"
-import { useTranslation } from "react-i18next"
 
 import styles from "./index.module.scss"
 
@@ -20,7 +19,6 @@ const MAX_COUNT = 2
 const LanguageShowDialog = (props: ILanguageSettingDialogProps) => {
   const { open, onOk, onCancel } = props
   const dispatch = useDispatch()
-  const { t } = useTranslation()
   const languageSelect = useSelector((state: RootState) => state.global.languageSelect)
   const recordLanguageSelect = useSelector((state: RootState) => state.global.recordLanguageSelect)
   const {
@@ -79,7 +77,7 @@ const LanguageShowDialog = (props: ILanguageSettingDialogProps) => {
     )
     dispatch(
       addMessage({
-        content: t("setting.saveSuccess"),
+        content: "Save success",
         type: "success",
       }),
     )
@@ -89,7 +87,7 @@ const LanguageShowDialog = (props: ILanguageSettingDialogProps) => {
   return (
     <Modal
       width={600}
-      title={t("dialog.languageShow")}
+      title="Language Show"
       open={open}
       footer={null}
       onOk={onOk}
@@ -99,10 +97,10 @@ const LanguageShowDialog = (props: ILanguageSettingDialogProps) => {
         <div className={styles.section}>
           <Space>
             <div className={styles.text} style={{ width: 160 }}>
-              {t("setting.liveLanguage")} 1
+              Live Language 1
             </div>
             <div className={styles.text}>
-              {t("setting.liveLanguage")} 1 - {t("translationLanguage")}
+              Live Language 1 - Translation Language
             </div>
           </Space>
           <div className={styles.selectWrapper}>
@@ -134,10 +132,10 @@ const LanguageShowDialog = (props: ILanguageSettingDialogProps) => {
         <div className={styles.section}>
           <Space>
             <div className={styles.text} style={{ width: 160 }}>
-              {t("setting.liveLanguage")} 2
+              Live Language 2
             </div>
             <div className={styles.text}>
-              {t("setting.liveLanguage")} 2 - {t("translationLanguage")}
+              Live Language 2 - Translation Language
             </div>
           </Space>
           <div className={styles.selectWrapper}>
@@ -170,7 +168,7 @@ const LanguageShowDialog = (props: ILanguageSettingDialogProps) => {
       </div>
       <div className={styles.btnWrapper}>
         <span className={styles.btn} onClick={onClickBtn}>
-          {t("confirm")}
+          Confirm
         </span>
       </div>
     </Modal>

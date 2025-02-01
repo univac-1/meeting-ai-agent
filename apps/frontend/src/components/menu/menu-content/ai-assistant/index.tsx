@@ -11,7 +11,6 @@ import { UploadIcon } from "@/components/icons"
 import { forwardRef, useMemo, useRef, useState, useImperativeHandle } from "react"
 
 import styles from "./index.module.scss"
-import { useTranslation } from "react-i18next"
 
 const { TextArea } = Input
 
@@ -22,7 +21,6 @@ export interface AiAssistantHandler {
 }
 
 const AiAssistant = forwardRef((props: AiAssistantProps, ref) => {
-  const { t } = useTranslation()
   const [systemText, setSystemText] = useState("")
   const [system, setSystem] = useState("")
   const [contentText, setContentText] = useState("")
@@ -113,9 +111,9 @@ const AiAssistant = forwardRef((props: AiAssistantProps, ref) => {
   return (
     <div className={styles.aiAssistant}>
       <div className={styles.prompt}>
-        <div className={styles.text}>{t("prompt")}</div>
+        <div className={styles.text}>Prompt</div>
         <Select
-          placeholder={t("ai.selectPromptSample")}
+          placeholder="Select prompt sample"
           className={styles.select}
           options={AI_PROMPT_OPTIONS.map((item) => ({
             label: item.label,
@@ -131,18 +129,18 @@ const AiAssistant = forwardRef((props: AiAssistantProps, ref) => {
         ></TextArea>
       </div>
       <div className={styles.conversation}>
-        <div className={styles.text}>{t("conversationText")}</div>
+        <div className={styles.text}>Conversation Text</div>
         <div className={styles.select}>
           <Select
             style={{ width: 210 }}
-            placeholder={t("ai.selectConversation")}
+            placeholder="Select conversation"
             options={aiUserContentOptions}
             onChange={onConversationChange}
             value={conversationSelectValue}
           ></Select>
           <span className={styles.btn} onClick={onClickUpload}>
             <input accept=".txt" type="file" onChange={onFileChange} ref={fileInputRef}></input>
-            <span className={styles.text}>{t("loadText")}</span>
+            <span className={styles.text}>Load Text</span>
             <UploadIcon></UploadIcon>
           </span>
         </div>
@@ -154,7 +152,7 @@ const AiAssistant = forwardRef((props: AiAssistantProps, ref) => {
         ></TextArea>
       </div>
       <div className={styles.result}>
-        <div className={styles.text}>{t("analysisResult")}</div>
+        <div className={styles.text}>Analysis Result</div>
         <div className={styles.textAreaWrapper}>
           <TextArea
             rows={10}
@@ -171,11 +169,11 @@ const AiAssistant = forwardRef((props: AiAssistantProps, ref) => {
       </div>
       <div className={styles.btnWrapper}>
         <span className={styles.btnAnalyze} onClick={onClickAnalyze}>
-          {t("analyze")}
+          Analyze
           {loading ? <LoadingOutlined></LoadingOutlined> : null}
         </span>
         <span className={styles.btnClearAll} onClick={onClickClearAll}>
-          {t("clearAll")}
+          Clear All
         </span>
       </div>
     </div>

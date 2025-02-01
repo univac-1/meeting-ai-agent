@@ -8,7 +8,6 @@ import { DialogLanguageType } from "@/types"
 
 import styles from "./index.module.scss"
 import { useMemo } from "react"
-import { useTranslation } from "react-i18next"
 
 interface ICaptionPopoverProps {
   children?: React.ReactNode
@@ -24,14 +23,13 @@ interface CaptionPopoverItem {
 const CaptionPopover = (props: ICaptionPopoverProps) => {
   const { children } = props
   const dispatch = useDispatch()
-  const { t } = useTranslation()
   const captionLanguages = useSelector((state: RootState) => state.global.captionLanguages)
   const languageSelect = useSelector((state: RootState) => state.global.languageSelect)
 
   const captionItems = useMemo(() => {
     const items: CaptionPopoverItem[] = []
     items.push({
-      text: t("liveLanguage"),
+      text: "Live Language",
       stt: "live",
       type: "live",
       active: captionLanguages.includes("live"),

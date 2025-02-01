@@ -6,7 +6,6 @@ import { LANGUAGE_OPTIONS } from "@/common"
 import { LoadingOutlined } from "@ant-design/icons"
 import { ILanguageItem } from "@/manager"
 import { addMessage, setRecordLanguageSelect, setSubtitles } from "@/store/reducers/global"
-import { useTranslation } from "react-i18next"
 
 import styles from "./index.module.scss"
 
@@ -26,7 +25,6 @@ let time = 0
 const LanguageSettingDialog = (props: ILanguageSettingDialogProps) => {
   const { open, onOk, onCancel } = props
   const dispatch = useDispatch()
-  const { t } = useTranslation()
   const sttData = useSelector((state: RootState) => state.global.sttData)
   const languageSelect = useSelector((state: RootState) => state.global.languageSelect)
   const { transcribe1, translate1List = [], transcribe2, translate2List = [] } = languageSelect
@@ -71,9 +69,9 @@ const LanguageSettingDialog = (props: ILanguageSettingDialogProps) => {
 
   const btnText = useMemo(() => {
     if (!hasSttStarted) {
-      return t("setting.sttStart")
+      return "Start"
     } else {
-      return t("setting.sttStop")
+      return "Stop"
     }
   }, [hasSttStarted])
 
@@ -86,7 +84,7 @@ const LanguageSettingDialog = (props: ILanguageSettingDialogProps) => {
       return
     }
     if (checkSomeSourceLanguage()) {
-      return dispatch(addMessage({ content: t("setting.sameLanguage"), type: "success" }))
+      return dispatch(addMessage({ content: "Same language", type: "success" }))
     }
     setLoading(true)
     try {
@@ -108,7 +106,7 @@ const LanguageSettingDialog = (props: ILanguageSettingDialogProps) => {
   const checkMaxTranslateList = (list1: string[] = [], list2: string[] = []) => {
     const arr = [...new Set([...list1, ...list2])]
     if (arr.length > 5) {
-      dispatch(addMessage({ content: t("setting.translationLanguageMax"), type: "error" }))
+      dispatch(addMessage({ content: "Translation language max", type: "error" }))
       return false
     }
     return true
@@ -141,7 +139,7 @@ const LanguageSettingDialog = (props: ILanguageSettingDialogProps) => {
     })
     dispatch(
       addMessage({
-        content: t("message.extendExperience"),
+        content: "Extend experience",
         type: "success",
       }),
     )
@@ -152,7 +150,7 @@ const LanguageSettingDialog = (props: ILanguageSettingDialogProps) => {
       width={600}
       title={
         <div ref={titleRef} className="title" onClick={onClickTitle}>
-          {t("footer.langaugesSetting")}
+          Languages Setting
         </div>
       }
       open={open}
@@ -161,16 +159,16 @@ const LanguageSettingDialog = (props: ILanguageSettingDialogProps) => {
       onCancel={onCancel}
     >
       <div className={styles.content}>
-        <Alert message={t("setting.limitDuration")} showIcon type="warning" />
-        <div className={styles.textTop}>{t("setting.languagesSelect")}</div>
-        <div className={styles.textBottom}>{t("setting.tip")}</div>
+        <Alert message="Limit duration" showIcon type="warning" />
+        <div className={styles.textTop}>Languages Select</div>
+        <div className={styles.textBottom}>Tip</div>
         <div className={styles.section}>
           <Space>
             <div className={styles.text} style={{ width: 160 }}>
-              {t("setting.liveLanguage")} 1
+              Live Language 1
             </div>
             <div className={styles.text}>
-              {t("setting.liveLanguage")} 1 - {t("translationLanguage")}
+              Live Language 1 - Translation Language
             </div>
           </Space>
           <div className={styles.selectWrapper}>

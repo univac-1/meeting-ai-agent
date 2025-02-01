@@ -3,7 +3,6 @@ import { RootState } from "@/store"
 import Time from "./time"
 import NetWork from "./network"
 import { useSelector } from "react-redux"
-import { useTranslation } from "react-i18next"
 
 import styles from "./index.module.scss"
 
@@ -16,7 +15,6 @@ const Header = (props: IHeaderProps) => {
   const sttData = useSelector((state: RootState) => state.global.sttData)
   const options = useSelector((state: RootState) => state.global.options)
   const { channel } = options
-  const { t } = useTranslation()
 
   const onClickChannel = async () => {
     // test stt query api
@@ -49,7 +47,7 @@ const Header = (props: IHeaderProps) => {
         {sttData.status == "start" ? (
           <>
             <TranscriptionIcon></TranscriptionIcon>
-            <span className={styles.text}>{t("transcribing")}</span>
+            <span className={styles.text}>Transcribing</span>
           </>
         ) : null}
       </span>

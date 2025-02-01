@@ -197,11 +197,6 @@ const Footer = (props: IFooterProps) => {
         onOk={() => setAIAgent(false)}
         onCancel={() => setAIAgent(false)}
       ></AiAgentDialog>
-      <LanguageSettingDialog
-        open={showLanguageSetting}
-        onOk={() => setShowLanguageSetting(false)}
-        onCancel={() => setShowLanguageSetting(false)}
-      ></LanguageSettingDialog>
     </footer>
   )
 }
