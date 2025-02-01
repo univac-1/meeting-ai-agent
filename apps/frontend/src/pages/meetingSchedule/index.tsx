@@ -62,6 +62,35 @@ const MeetingSchedulePage = () => {
   }
 
   const handleApiCall = async () => {
+    if (!meetingName.trim()) {
+      messageApi.error("会議名を入力してください。");
+      return;
+    }
+    if (!meetingPurpose.trim()) {
+      messageApi.error("会議の目的を入力してください。");
+      return;
+    }
+    if (!startDate) {
+      messageApi.error("開始日を選択してください。");
+      return;
+    }
+    if (!startTime) {
+      messageApi.error("開始時刻を選択してください。");
+      return;
+    }
+    if (!endTime) {
+      messageApi.error("終了時刻を選択してください。");
+      return;
+    }
+    if (participants.length === 0) {
+      messageApi.error("少なくとも1人の参加者を追加してください。");
+      return;
+    }
+    if (agendaItems.length === 0) {
+      messageApi.error("少なくとも1つのアジェンダを追加してください。");
+      return;
+    }
+
     try {
       const response = await axios.post(`${CLOUD_RUN_ENDPOINT}/meeting`, {
         meeting_name: meetingName,
