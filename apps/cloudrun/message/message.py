@@ -1,7 +1,9 @@
-from constants import FIRESTORE_COMMENT_COLLECTION, FIRESTORE_MEETING_COLLECTION
 from config import Config
 from datetime import datetime
 import pytz
+
+FIRESTORE_COMMENT_COLLECTION = Config.FIRESTORE_COMMENT_COLLECTION
+FIRESTORE_MEETING_COLLECTION = Config.FIRESTORE_MEETING_COLLECTION
 
 db_client = Config.get_db_client()
 
