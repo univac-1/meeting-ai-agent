@@ -2,7 +2,6 @@ import { useDispatch, useSelector } from "react-redux"
 import { RootState } from "@/store"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Modal, Alert, Select, Space } from "antd"
-import { useTranslation } from "react-i18next"
 import axios from "axios"
 import { CLOUD_RUN_ENDPOINT } from "../../../config"
 
@@ -16,7 +15,6 @@ interface IAiAgentDialogProps {
 
 const AiAgentDialog = (props: IAiAgentDialogProps) => {
   const { open, onOk, onCancel } = props
-  const { t } = useTranslation()
   const titleRef = useRef<HTMLDivElement>(null)
   const options = useSelector((state: RootState) => state.global.options)
   const { channel } = options
@@ -33,7 +31,7 @@ const AiAgentDialog = (props: IAiAgentDialogProps) => {
       width={600}
       title={
         <div ref={titleRef} className="title">
-          {t("footer.aIAgent")}
+          AI Agent
         </div>
       }
       open={open}

@@ -1,6 +1,5 @@
 import axios from "axios";
 import { message, DatePicker, TimePicker, Button, Table } from "antd";
-import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { version } from "../../../package.json";
 import { useNavigate, useParams } from "react-router-dom";
@@ -16,7 +15,6 @@ import { db } from '@/firebase';
 
 const MeetingInfoPage = () => {
   const nav = useNavigate();
-  const { t, i18n } = useTranslation();
   const { meetingId } = useParams<{ meetingId: string }>();
   const [messageApi, contextHolder] = message.useMessage();
   const [data, setData] = useState<DocumentData | null>(null);

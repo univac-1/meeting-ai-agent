@@ -1,4 +1,3 @@
-import { useTranslation } from "react-i18next"
 import { version } from "../../../package.json"
 import { useNavigate } from "react-router-dom"
 
@@ -7,7 +6,6 @@ import logoSrc from "@/assets/login_logo.png"
 
 const HomePage = () => {
   const nav = useNavigate()
-  const { t, i18n } = useTranslation()
 
   const onClickSchedule = () => {
     nav("/meeting/schedule")
@@ -24,13 +22,13 @@ const HomePage = () => {
           <div className={styles.logo}>
             <img src={logoSrc} alt="" />
           </div>
-          <div className={styles.text}>{t("home.title")}</div>
+          <div className={styles.text}>Meeting With AI Agent</div>
         </div>
         <div className={styles.btn} onClick={onClickSchedule}>
-          {t("home.schedule")}
+          schedule meeting
         </div>
         <div className={styles.btn} onClick={onClickJoin}>
-          {t("home.join")}
+          join meeting
         </div>
         <div className={styles.version}>Version {version}</div>
       </section>

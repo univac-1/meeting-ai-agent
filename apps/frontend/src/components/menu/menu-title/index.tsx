@@ -12,19 +12,17 @@ import {
 } from "@/store/reducers/global"
 
 import styles from "./index.module.scss"
-import { useTranslation } from "react-i18next"
 
 const MenuTitle = () => {
   const dispatch = useDispatch()
-  const { t } = useTranslation()
   const menuList = useSelector((state: RootState) => state.global.menuList)
   const activeType = menuList[0]
 
   const TitleOneText = useMemo(() => {
     if (activeType == "AI") {
-      return t("footer.aIAssistant")
+      return "AI Assistant"
     } else {
-      return t("footer.conversationHistory")
+      return "Conversation History"
     }
   }, [activeType])
 
@@ -58,7 +56,7 @@ const MenuTitle = () => {
             onClick={() => onClickItem("DialogRecord")}
           >
             <TranscriptionIcon width={16} height={16}></TranscriptionIcon>
-            <span className={styles.text}>{t("footer.conversationHistory")}</span>
+            <span className={styles.text}>Conversation History</span>
             {activeType == "DialogRecord" ? (
               <CloseOutlined style={{ fontSize: "12px" }} onClick={onClickClose} />
             ) : null}
@@ -68,7 +66,7 @@ const MenuTitle = () => {
             onClick={() => onClickItem("AI")}
           >
             <AiIcon width={16} height={16}></AiIcon>
-            <span className={styles.text}>{t("footer.aIAssistant")}</span>
+            <span className={styles.text}>AI Assistant</span>
             {activeType == "AI" ? (
               <CloseOutlined style={{ fontSize: "12px" }} onClick={onClickClose} />
             ) : null}

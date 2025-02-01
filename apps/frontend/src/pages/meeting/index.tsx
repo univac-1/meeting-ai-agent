@@ -34,7 +34,6 @@ import {
 import { useSelector, useDispatch } from "react-redux"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import { useTranslation } from "react-i18next"
 import axios from "axios"
 import { CLOUD_RUN_ENDPOINT } from "@/config"
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition"
@@ -54,7 +53,6 @@ window.sttManager = sttManager
 const MeetingPage = () => {
   const dispatch = useDispatch()
   const nav = useNavigate()
-  const { t } = useTranslation()
   const isMounted = useMount()
   const { contextHolder } = useMessage()
   const localAudioMute = useSelector((state: RootState) => state.global.localAudioMute)
@@ -122,11 +120,11 @@ const MeetingPage = () => {
           token: sttData.token ?? "",
         })
         dispatch(setSubtitles([]))
-        dispatch(addMessage({ content: t("setting.sttStart"), type: "success" }))
+        dispatch(addMessage({ content: "Start transcription", type: "success" }))
       } else if (sttData.status == "end") {
         sttManager.removeOption()
         dispatch(setCaptionShow(false))
-        dispatch(addMessage({ content: t("setting.sttStop"), type: "success" }))
+        dispatch(addMessage({ content: "Stop transcription", type: "success" }))
       }
     }
     // do not put isMounted in the dependencies

@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from "react-redux"
 import { RootState } from "@/store"
 import { useResizeObserver, formatTime } from "@/common"
 import { SettingIcon } from "@/components/icons"
-import { useTranslation } from "react-i18next"
 
 import styles from "./index.module.scss"
 
@@ -13,7 +12,6 @@ interface IRecordHeaderProps {
 
 const RecordHeader = (props: IRecordHeaderProps) => {
   const dispatch = useDispatch()
-  const { t } = useTranslation()
   const sttData = useSelector((state: RootState) => state.global.sttData)
   const [experienceDuration, setExperienceDuration] = useState(0)
   const headerRef = useRef<HTMLDivElement>(null)
@@ -68,7 +66,7 @@ const RecordHeader = (props: IRecordHeaderProps) => {
           <div className={styles.start}>
             <div className={styles.try} ref={tryRef}>
               <span className={styles.text}>
-                {t("conversation.onTrial")} &nbsp;
+                On Trial &nbsp;
                 <span className={styles.time}>{formatTime(experienceDuration)}</span> &nbsp;
                 {/* <span>{t("conversation.extendExperienceText")}</span> */}
               </span>
@@ -81,10 +79,10 @@ const RecordHeader = (props: IRecordHeaderProps) => {
               <SettingIcon></SettingIcon>
             </div>
           </div>
-          <div className={styles.conversation}>{t("conversation.sttStarted")}</div>
+          <div className={styles.conversation}>Transcription Started</div>
         </>
       ) : (
-        <div className={styles.conversation}>{t("conversation.sttStopped")}</div>
+        <div className={styles.conversation}>Transcription Stopped</div>
       )}
     </section>
   )

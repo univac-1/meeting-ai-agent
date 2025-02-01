@@ -2,7 +2,6 @@ import { Switch, Input, message } from "antd"
 import { useSelector, useDispatch } from "react-redux"
 import { RootState } from "@/store"
 import { InputStatuses } from "@/types"
-import { useTranslation } from "react-i18next"
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { genRandomUserId, REGEX_SPECIAL_CHAR, GITHUB_URL, parseQuery } from "@/common"
 import { setOptions, setUserInfo, setMeetingId } from "@/store/reducers/global"
@@ -16,7 +15,6 @@ import githubSrc from "@/assets/github.jpg"
 const JoinPage = () => {
   const nav = useNavigate()
   const location = useLocation()
-  const { t, i18n } = useTranslation()
   const dispatch = useDispatch()
   const [messageApi, contextHolder] = message.useMessage()
   const options = useSelector((state: RootState) => state.global.options)
@@ -42,15 +40,6 @@ const JoinPage = () => {
     }
     setUserName(value)
   }
-
-  const onLanguageChange = useCallback(
-    (checked: boolean) => {
-      const language = checked ? "zh" : "en"
-      dispatch(setOptions({ language }))
-      i18n.changeLanguage(language)
-    },
-    [i18n],
-  )
 
   const onClickJoin = () => {
     if (!channel) {
@@ -82,26 +71,11 @@ const JoinPage = () => {
     <div className={styles.joinPage}>
       {contextHolder}
       <section className={styles.content}>
-        <section className={styles.top}>
-          <span className={styles.github} onClick={onClickGithub}>
-            <img src={githubSrc} alt="" />
-            <span className={styles.text}>{t("join.github")}</span>
-          </span>
-          <span className={styles.language}>
-            <Switch
-              size="default"
-              checkedChildren="中文"
-              unCheckedChildren="English"
-              value={options.language === "zh"}
-              onChange={onLanguageChange}
-            />
-          </span>
-        </section>
         <div className={styles.title}>
           <div className={styles.logo}>
             <img src={logoSrc} alt="" />
           </div>
-          <div className={styles.text}>{t("join.title")}</div>
+          <div className={styles.text}>Join Meeting</div>
         </div>
         <div className={styles.item}>
           <Input
@@ -121,7 +95,7 @@ const JoinPage = () => {
           />
         </div>
         <div className={styles.btn} onClick={onClickJoin}>
-          {t("join.join")}
+          join meeting
         </div>
       </section>
     </div>

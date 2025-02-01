@@ -1,6 +1,5 @@
 import axios from "axios";
 import { Input, message, DatePicker, TimePicker, Button } from "antd"
-import { useTranslation } from "react-i18next"
 import { useState } from "react"
 import { version } from "../../../package.json"
 import { useNavigate } from "react-router-dom"
@@ -15,7 +14,6 @@ const { TextArea } = Input
 
 const MeetingSchedulePage = () => {
   const nav = useNavigate()
-  const { t, i18n } = useTranslation()
   const [messageApi, contextHolder] = message.useMessage()
   const [meetingName, setMeetingName] = useState("")
   const [meetingPurpose, setMeetingPurpose] = useState("")

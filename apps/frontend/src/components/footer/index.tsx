@@ -29,7 +29,6 @@ import CaptionPopover from "./caption-popover"
 import { Popover } from "antd"
 import { RootState } from "@/store"
 import { useEffect, useMemo, useState } from "react"
-import { useTranslation } from "react-i18next"
 import { useNavigate, useLocation } from "react-router-dom"
 
 import styles from "./index.module.scss"
@@ -42,7 +41,6 @@ const Footer = (props: IFooterProps) => {
   const { style } = props
   const nav = useNavigate()
   const dispatch = useDispatch()
-  const { t } = useTranslation()
   const location = useLocation()
   const localAudioMute = useSelector((state: RootState) => state.global.localAudioMute)
   const localVideoMute = useSelector((state: RootState) => state.global.localVideoMute)
@@ -68,15 +66,15 @@ const Footer = (props: IFooterProps) => {
   }, [sttData])
 
   const MicText = useMemo(() => {
-    return localAudioMute ? t("footer.unMuteAudio") : t("footer.muteAudio")
+    return localAudioMute ? "UnMute Audio" : "Mute Audio"
   }, [localAudioMute])
 
   const CameraText = useMemo(() => {
-    return localVideoMute ? t("footer.unMuteVideo") : t("footer.muteVideo")
+    return localVideoMute ? "UnMute Video" : "Mute Video"
   }, [localVideoMute])
 
   const captionText = useMemo(() => {
-    return captionShow ? t("footer.stopCC") : t("footer.startCC")
+    return captionShow ? "Stop CC" : "Start CC"
   }, [captionShow])
 
   const onClickMic = () => {
@@ -149,7 +147,7 @@ const Footer = (props: IFooterProps) => {
         {/* member */}
         <span className={styles.item} onClick={onClickMember}>
           <MemberIcon active={memberListShow}></MemberIcon>
-          <span className={styles.text}>{t("footer.participantsList")}</span>
+          <span className={styles.text}>Participants List</span>
         </span>
         {/* caption */}
         <span
@@ -167,32 +165,32 @@ const Footer = (props: IFooterProps) => {
         {/* dialog */}
         <span className={`${styles.item}`} onClick={onClickDialogRecord}>
           <TranscriptionIcon active={dialogRecordShow}></TranscriptionIcon>
-          <span className={styles.text}>{t("footer.conversationHistory")}</span>
+          <span className={styles.text}>Conversation History</span>
         </span>
         {/* ai agent */}
-        <Popover placement="top" content={t("footer.tipEnableSTTFirst")} open={tipSTTEnable}>
+        <Popover placement="top" content="Please start transcription first" open={tipSTTEnable}>
           <span className={`${styles.item}`} onClick={toggleAIAgentDialog}>
             <AiIcon></AiIcon>
-            <span className={`${styles.text}`}>{t("footer.aIAgent")}</span>
+            <span className={`${styles.text}`}>AI Agent</span>
           </span>
         </Popover>
         {/* language */}
-        <Popover placement="top" content={t("footer.tipEnableSTTFirst")} open={tipSTTEnable}>
+        <Popover placement="top" content="Please start transcription first" open={tipSTTEnable}>
           <span className={`${styles.item}`} onClick={toggleLanguageSettingDialog}>
             <SettingIcon></SettingIcon>
-            <span className={`${styles.text}`}>{t("footer.langaugesSetting")}</span>
+            <span className={`${styles.text}`}>Languages Setting</span>
           </span>
         </Popover>
         {/* ai */}
         {showAIModule() ? (
           <span className={styles.item} onClick={onClickAiShow}>
             <AiIcon active={aiShow}></AiIcon>
-            <span className={styles.text}>{t("footer.aIAssistant")}</span>
+            <span className={styles.text}>AI Assistant</span>
           </span>
         ) : null}
       </section>
       <span className={styles.end} onClick={onClickEnd}>
-        {t("closeConversation")}
+        Close Conversation
       </span>
       <AiAgentDialog
         open={showAIAgent}
