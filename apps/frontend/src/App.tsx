@@ -1,18 +1,11 @@
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import Home from "./Home";
-import MeetingSetup from "./MeetingSetup";
-import MeetingApp from "./MeetingApp";
+import { useCatchError, useScreenResize } from "@/common"
+import { RouteContainer } from "./router"
 
-const App = () => {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/setup" element={<MeetingSetup />} />
-        <Route path="/meeting/:meetingId" element={<MeetingApp />} />
-      </Routes>
-    </Router>
-  );
-};
+function App() {
+  useCatchError()
+  useScreenResize()
 
-export default App;
+  return <RouteContainer></RouteContainer>
+}
+
+export default App
