@@ -1,7 +1,60 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from "vite"
+import react from "@vitejs/plugin-react"
+import svgr from "vite-plugin-svgr"
+import { name } from "./package.json"
 
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [react()],
+const genBaseUrl = (mode) => {
+  if (mode !== "development") {
+    if (mode == "test") {
+      return `/${name}-test/`
+    }
+    return `/${name}/`
+  }
+  return "/"
+}
+
+export default defineConfig(({ mode }) => {
+  return {
+    resolve: {
+      alias: {
+        "@": "/src",
+      },
+    },
+    base: "/",
+    build: {
+      // cssCodeSplit: false,
+      // target: "es2015",
+    },
+    server: {
+      watch: {
+        // usePolling: true
+      },
+    },
+    plugins: [
+      react(),
+      svgr({
+        svgrOptions: {
+          // icon: true,
+          // typescript: true,
+        },
+      }),
+    ],
+    css: {
+      preprocessorOptions: {
+        scss: {
+          api: "modern",
+        },
+      },
+      modules: {
+        // hashPrefix: 'hash',
+        // generateScopedName: "[name]__[local]__[hash:base64:2]",
+        // globalModulePaths: [
+        //   /.*\\.global\\..*/
+        // ]
+      },
+      postcss: {
+        plugins: [],
+      },
+    },
+  }
 })

@@ -3,7 +3,6 @@ from typing import List, Optional
 from typing_extensions import TypedDict
 from config import Config
 
-FIRESTORE_MEETING_COLLECTION = Config.FIRESTORE_MEETING_COLLECTION
 
 # アジェンダ項目の型定義
 class AgendaItem(TypedDict):
@@ -13,6 +12,7 @@ class AgendaItem(TypedDict):
 
 db_client = Config.get_db_client()
 
+
 def create_meeting(
     meeting_name: str,
     participants: List[str],
@@ -20,7 +20,7 @@ def create_meeting(
     start_date: str,
     start_time: str,
     end_time: str,
-    meeting_purpose: str
+    meeting_purpose: str,
 ) -> str:
     """
     会議情報をFirestoreに保存し、ユニークな会議IDを生成して返す。
@@ -51,6 +51,8 @@ def create_meeting(
         "agenda": agenda,
     }
 
-    db_client.collection(FIRESTORE_MEETING_COLLECTION).document(meeting_id).set(data)
+    db_client.collection(Config.FIRESTORE_MEETING_COLLECTION).document(meeting_id).set(
+        data
+    )
 
     return meeting_id
