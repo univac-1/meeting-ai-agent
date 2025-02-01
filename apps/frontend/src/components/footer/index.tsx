@@ -138,10 +138,12 @@ const Footer = (props: IFooterProps) => {
           <span className={styles.text}>Conversation History</span>
         </span>
         {/* ai */}
-        <span className={styles.item} onClick={onClickAiShow}>
-          <AiIcon active={aiShow}></AiIcon>
-          <span className={styles.text}>AI Assistant</span>
-        </span>
+        {showAIModule() ? (
+          <span className={styles.item} onClick={onClickAiShow}>
+            <AiIcon active={aiShow}></AiIcon>
+            <span className={styles.text}>AI Assistant</span>
+          </span>
+        ) : null}
       </section>
       <span className={styles.end} onClick={onClickEnd}>
         Close Conversation
