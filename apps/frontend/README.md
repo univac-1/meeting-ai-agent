@@ -1,5 +1,12 @@
 # ローカル開発環境のセットアップ (React + TypeScript + Vite)
 
+## `.env`の設定
+`apps/frontend`に`.env`を作成する
+```
+VITE_AGORA_APP_ID=<あなたのAPP_ID>
+VITE_AGORA_APP_CERTIFICATE=<あなたのAPP_CERTIFICATE>
+```
+
 ## backendの向き先の変更
 
 API のエンドポイントを変更する場合は、apps/frontend/src/config.ts 内の CLOUD_RUN_ENDPOINT の値を適切に設定してください。
