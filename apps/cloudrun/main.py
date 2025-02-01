@@ -18,8 +18,6 @@ from meeting.meeting import (
 from config import Config
 import json
 
-FIRESTORE_MEETING_COLLECTION = Config.FIRESTORE_MEETING_COLLECTION
-
 app = Flask(__name__)
 app.json.ensure_ascii = False
 
@@ -75,7 +73,7 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
     # 会議の基本情報を取得
     meeting_ref = (
         Config.get_db_client()
-        .collection(FIRESTORE_MEETING_COLLECTION)
+        .collection(Config.FIRESTORE_MEETING_COLLECTION)
         .document(meeting_id)
     )
     meeting_doc = meeting_ref.get()
