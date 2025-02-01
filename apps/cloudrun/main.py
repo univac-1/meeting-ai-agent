@@ -4,10 +4,10 @@ from typing import Dict
 from agent.meeting_feedback_graph import process_meeting_feedback, MeetingInput
 from flask_cors import CORS
 
-from constants import FIRESTORE_MEETING_COLLECTION
 from message.message import post_message, get_message_history
 from meeting.meeting import create_meeting
 from config import Config
+FIRESTORE_MEETING_COLLECTION = Config.FIRESTORE_MEETING_COLLECTION
 
 app = Flask(__name__)
 app.json.ensure_ascii = False

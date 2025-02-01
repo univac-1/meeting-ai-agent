@@ -1,7 +1,7 @@
 import uuid
-from constants import FIRESTORE_MEETING_COLLECTION
 from config import Config
 
+FIRESTORE_MEETING_COLLECTION = Config.FIRESTORE_MEETING_COLLECTION
 
 db_client = Config.get_db_client()
 
