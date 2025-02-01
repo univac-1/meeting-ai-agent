@@ -1,50 +1,69 @@
-# React + TypeScript + Vite
+# Agora RTT Web Demo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Prepare
 
-## Expanding the ESLint configuration
+* node version 18+ , 20+
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
 
-- Configure the top-level `parserOptions` property like this:
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## Config
+
+See [Get Started with Agora](https://docs.agora.io/en/video-calling/reference/manage-agora-account?platform=web#get-started-with-agora) to learn how to get an App ID and App Certificate. (Certificate must be turned on)
+
+
+
+Activate RTM permissions in the console
+
+<img src=https://fullapp.oss-cn-beijing.aliyuncs.com/pic/rtm/39351715138175_.pic.jpg width=80% />
+
+
+
+
+
+Contact technical support to activate RTT permissions
+
+- You can get help from intelligent customer service or contact sales staff [Agora support](https://agora-ticket.agora.io/) 
+- Send an email to  [support@agora.io](mailto:support@agora.io)  for consultation
+
+
+
+Find `.env`  file  and fill in the following parameters correctly
+
+```bash
+VITE_AGORA_APP_ID=<YOUR_APP_ID>
+VITE_AGORA_APP_CERTIFICATE=<YOUR_APP_CERTIFICATE>
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+## Install
+
+In the project root path run the following command to install dependencies.
+
+```bash
+npm install 
+```
+
+
+
+
+
+## Dev
+
+Use the following command to run the sample project.
+
+```bash
+npm run dev
+```
+
+
+
+## Build
+
+Use the following command to build the sample project.
+
+```bash
+npm run build
 ```
