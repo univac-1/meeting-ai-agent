@@ -18,6 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: cd apps/frontend && npm ci && npm run build
+        env:
+          VITE_AGORA_APP_ID: ${{ secrets.VITE_AGORA_APP_ID }}
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
