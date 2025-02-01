@@ -3,25 +3,26 @@ from typing import List, Optional
 from typing_extensions import TypedDict
 from config import Config
 
-FIRESTORE_MEETING_COLLECTION = Config.FIRESTORE_MEETING_COLLECTION
 
 # アジェンダ項目の型定義
 class AgendaItem(TypedDict):
     topic: str
     duration: int
 
+
 # 会議更新データの型定義
 class MeetingUpdateFields(TypedDict, total=False):
     meeting_name: Optional[str]
     meeting_purpose: Optional[str]
-    start_date: Optional[str]      # YYYY-MM-DD
-    start_time: Optional[str]      # HH:MM
-    end_time: Optional[str]        # HH:MM
+    start_date: Optional[str]  # YYYY-MM-DD
+    start_time: Optional[str]  # HH:MM
+    end_time: Optional[str]  # HH:MM
     participants: Optional[List[str]]
     agenda: Optional[List[AgendaItem]]
 
 
 db_client = Config.get_db_client()
+
 
 def create_meeting(
     meeting_name: str,
@@ -30,7 +31,7 @@ def create_meeting(
     start_date: str,
     start_time: str,
     end_time: str,
-    meeting_purpose: str
+    meeting_purpose: str,
 ) -> str:
     """
     会議情報をFirestoreに保存し、ユニークな会議IDを生成して返す。
@@ -61,9 +62,12 @@ def create_meeting(
         "agenda": agenda,
     }
 
-    db_client.collection(FIRESTORE_MEETING_COLLECTION).document(meeting_id).set(data)
+    db_client.collection(Config.FIRESTORE_MEETING_COLLECTION).document(meeting_id).set(
+        data
+    )
 
     return meeting_id
+
 
 def update_meeting(meeting_id: str, update_data: MeetingUpdateFields) -> bool:
     """
@@ -85,14 +89,16 @@ def update_meeting(meeting_id: str, update_data: MeetingUpdateFields) -> bool:
     """
     try:
         # 会議の存在確認
-        doc_ref = db_client.collection(FIRESTORE_MEETING_COLLECTION).document(meeting_id)
+        doc_ref = db_client.collection(Config.FIRESTORE_MEETING_COLLECTION).document(
+            meeting_id
+        )
         if not doc_ref.get().exists:
             return False
-        
+
         # データの更新
         doc_ref.update(update_data)
         return True
-        
+
     except Exception as e:
         print(f"Error updating meeting: {e}")
         return False
