@@ -120,11 +120,11 @@ const MeetingPage = () => {
           token: sttData.token ?? "",
         })
         dispatch(setSubtitles([]))
-        dispatch(addMessage({ content: "Start transcription", type: "success" }))
+        dispatch(addMessage({ content: t("setting.sttStart"), type: "success" }))
       } else if (sttData.status == "end") {
         sttManager.removeOption()
         dispatch(setCaptionShow(false))
-        dispatch(addMessage({ content: "Stop transcription", type: "success" }))
+        dispatch(addMessage({ content: t("setting.sttStop"), type: "success" }))
       }
     }
     // do not put isMounted in the dependencies
