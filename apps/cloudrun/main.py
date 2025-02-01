@@ -1,12 +1,13 @@
 from flask import Flask, request, jsonify
 from typing import Dict
 
-from agent.conversation import handle_conversation
 from agent.meeting_feedback_graph import process_meeting_feedback, MeetingInput
 from flask_cors import CORS
 
+from constants import FIRESTORE_MEETING_COLLECTION
 from message.message import post_message, get_message_history
 from meeting.meeting import create_meeting
+from config import Config
 
 app = Flask(__name__)
 app.json.ensure_ascii = False
@@ -22,11 +23,18 @@ def hello_world():
 @app.route('/meeting', methods=["POST"])
 def meeting():
     data = request.get_json()  # リクエストからデータを取得
-    meeting_name = data.get("meeting_name")
-    participants = data.get("participants")
-    agenda = data.get("agenda")
+    meeting_name = data["meeting_name"]
+    meeting_purpose = data["meeting_purpose"]
+    start_date = data["start_date"]
+    start_time = data["start_time"]
+    end_time = data["end_time"]
+    participants = data["participants"]
+    agenda = data["agenda"]
 
-    meeting_id = create_meeting(meeting_name, participants, agenda)
+    # 会議の作成処理
+    meeting_id = create_meeting(
+        meeting_name, participants, agenda, start_date, start_time, end_time, meeting_purpose
+    )
 
     return jsonify({"data": {"meeting_id": meeting_id}}), 201
 
@@ -43,34 +51,60 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
     Returns:
         Dict: 会議フィードバック（アジェンダ、要約、評価、改善提案）
     """
-
-        # テスト用のモックデータ
-    mock_meetings: Dict[str, MeetingInput] = {
-        "test-meeting": MeetingInput(
-            purpose="プロダクトのアイデアを決める",
-            agenda=["参加者からアイデアを募る", "参加者同士でアイデアを評価", "最も評価のよいものに決定"],
-            participants=["ごん", "ぴとー", "ごれいぬ"],
-            comment_history=[
-                {"speaker": "ごん", "message": "ぼくは事務手続きの処理フローを可視化するツールを作りたい"},
-                {"speaker": "ぴとー", "message": "それってネットで検索すればよくない?chatbotもある気がするけど"},
-                {"speaker": "ごん", "message": "パスポートをとったときの話だけど、必要なフローを網羅するのに横断的にサイト検索しないといけないのは大変だったよ。"},
-                {"speaker": "ぴとー", "message": "ごめん、なにいってるかよくわかんない。次"}
-            ]
-        )
-    }
-
-    # 会話履歴をDBから取得する
-    # TODO:これを使う
-    message_history = get_message_history(meeting_id)
-
-    if meeting_id not in mock_meetings:
-        return jsonify({"error": "Meeting not found"}), 404
+    # 会議の基本情報を取得
+    meeting_ref = Config.get_db_client().collection(FIRESTORE_MEETING_COLLECTION).document(meeting_id)
+    meeting_doc = meeting_ref.get()
     
-    meeting_input = mock_meetings[meeting_id]
+    if not meeting_doc.exists:
+        return jsonify({"error": "Meeting not found"}), 404
+        
+    meeting_data = meeting_doc.to_dict()
+    print("Meeting data:", meeting_data)  # デバッグ用ログ
+    
+    # 会話履歴を取得
+    message_history = get_message_history(meeting_id)
+    print("Message history:", message_history)  # デバッグ用ログ
+    
+    # 既存実装に合わせるためにアジェンダの "topic" だけを抽出した配列を生成
+    agenda_topics = [item.get("topic", "") for item in meeting_data["agenda"]]
+
+    # MeetingInputを構築
+    try:
+        meeting_input = MeetingInput(
+            purpose=meeting_data.get("meeting_purpose"),
+            agenda=agenda_topics,
+            participants=meeting_data.get("participants", []),
+            comment_history=message_history if isinstance(message_history, list) else [message_history]
+        )
+    except Exception as e:
+        print("Error creating MeetingInput:", e)
+        print("message_history type:", type(message_history))
+        print("message_history content:", message_history)
+        return jsonify({"error": "Invalid meeting data format"}), 500
+    
     feedback = process_meeting_feedback(meeting_input)
 
-    # AIのフィードバックをDB保存する
-    post_message(meeting_id, "AI", feedback)
+    # AIのフィードバックを発言履歴用DBに保存する
+    post_message(meeting_id, Config.get_ai_facilitator_name(), feedback["message"], meta={"voice": True, "role": "ai"})
+    detail = feedback.get("detail", {})
+    # detailsの処理
+    for key, value in detail.items():
+        if key == "agenda":
+            message = "アジェンダは以下です。\n"    
+            message += "\n".join(value)
+            post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
+        elif key == "summary":
+            message = "要約です。\n"
+            message += value
+            post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
+        elif key == "evaluation":
+            message = "評価です。\n"
+            message += value
+            post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"})
+        elif key == "improvement":
+            message = "改善提案です。\n"
+            message += value
+            post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai"}) 
 
     return jsonify({"data": feedback}), 200
 

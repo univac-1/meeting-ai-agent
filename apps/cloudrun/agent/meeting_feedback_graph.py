@@ -1,178 +1,283 @@
-from typing import Dict, TypedDict, Annotated, Sequence
+from typing import Dict, Optional, List
+from typing_extensions import TypedDict
 from datetime import datetime
 import os
-
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_google_genai import ChatGoogleGenerativeAI
+import google.generativeai as genai
 from langgraph.graph import StateGraph, END
 from pydantic import BaseModel
+import json
+from config import Config
 
 # 入力データの型定義
 class MeetingInput(BaseModel):
     purpose: str
-    agenda: list[str] | None = None
-    participants: list[str]
-    comment_history: list[dict]
+    agenda: Optional[List[str]] = None
+    participants: List[str]
+    comment_history: List[Dict]
 
 # 状態の型定義
 class GraphState(TypedDict):
     purpose: str
-    agenda: list[str]
-    participants: list[str]
-    comment_history: list[dict]
-    summary: str | None
-    evaluation: str | None
-    improvement: str | None
+    agenda: List[str]
+    participants: List[str]
+    comment_history: List[Dict]
+    comment: Optional[str]
+    summary: Optional[str]
+    evaluation: Optional[str]
+    improvement: Optional[str]
 
-def get_llm():
-    """環境変数からAPI KeyとモデルIDを取得してLLMを初期化"""
+def init_gemini(system_instruction: str = None):
+    """Gemini APIの初期化"""
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise ValueError("GEMINI_API_KEY environment variable is not set")
     
-    model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")  # デフォルトはgemini-1.5-flash
-    return ChatGoogleGenerativeAI(model=model_name, google_api_key=api_key)
+    genai.configure(api_key=api_key)
+    model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash-002")
+    
+    if system_instruction:
+        return genai.GenerativeModel(
+            model_name,
+            system_instruction=[system_instruction]
+        )
+    return genai.GenerativeModel(model_name)
 
 # アジェンダ生成ノード
 def create_agenda_node():
-    prompt = ChatPromptTemplate.from_messages([
-        ("human", """あなたは会議のファシリテーターとして、以下の会議の目的に基づいて効果的なアジェンダを作成してください。
+    system_prompt = f"""あなたは会議の目的に基づいてアジェンダを作成する専門のAIです。
+与えられた入力を踏まえた上で、会議の目的を達成するために必要なステップをアジェンダとして作成してください。
 
-会議の目的: {purpose}
-参加者: {participants}
-
-アジェンダは以下の点を考慮して作成してください：
+アジェンダのポイント：
 1. 会議の目的を達成するために必要なステップ
 2. 参加者全員が効果的に議論に参加できる構成
 3. 時間配分を考慮した現実的な項目数（3-5項目程度）
 4. 具体的な成果物や決定事項の明確化
 
-以下の形式で箇条書きのリストとして提案してください：
-- [アジェンダ項目1]
-- [アジェンダ項目2]
-- [アジェンダ項目3]
-...
-
-各アジェンダ項目は、具体的なアクションや目標を示す短い文章にしてください。""")
-    ])
+入力：
+- 目的：会議の目的
+- 参加者：会議の参加者
+"""
     
-    model = get_llm()
+    model = init_gemini(system_prompt)
     
     def generate_agenda(state: GraphState) -> GraphState:
-        messages = prompt.format_messages(
-            purpose=state["purpose"],
-            participants=state["participants"]
+        prompt = {
+            "目的": state["purpose"],
+            "参加者": state["participants"]
+        }
+
+        response = model.generate_content(
+            str(prompt),
+            generation_config=genai.GenerationConfig(
+                temperature=0.7,
+                candidate_count=1,
+                response_mime_type="application/json",
+                response_schema=AgendaResponse
+            )
         )
-        response = model.invoke(messages)
-        # 応答からアジェンダのリストを抽出（'-'で始まる行のみを抽出）
-        agenda_items = [item.strip('- ') for item in response.content.split('\n') if item.strip().startswith('-')]
-        if not agenda_items:  # 箇条書きでない場合は行ごとに分割して最初の3-5行を使用
-            agenda_items = [item.strip() for item in response.content.split('\n') if item.strip()][:5]
-        state["agenda"] = agenda_items
-        return state
+
+        try:
+            result = json.loads(response.text)
+            state["agenda"] = result["アジェンダ"]
+            return state
+        except Exception as e:
+            print(f"Error processing agenda: {e}")
+            state["agenda"] = []
+            return state
     
     return generate_agenda
 
 # 会議要約ノード
 def create_summary_node():
-    prompt = ChatPromptTemplate.from_messages([
-        ("human", """あなたは会議の内容を簡潔に要約する専門家として、以下の情報をもとに会議の内容を要約してください。
+    system_prompt = """あなたは進行途中の会議の状況を簡潔に要約する専門のAIです。
+与えられた入力を踏まえた上で、会議の状況を要約してください
 
 要約のポイント：
 1. 議論された主要なトピック
 2. 参加者から出された重要な意見
 3. 決定事項や合意点
 4. 未解決の課題
+5. 会議は進行途中であるため、必ずしもすべてのアジェンダを網羅しているとは限らない
+6. AIの発言内容は除外する
 
-200字程度で簡潔にまとめてください。
-
-会議の目的: {purpose}
-アジェンダ: {agenda}
-参加者: {participants}
-コメント履歴: {conversation_history}""")
-    ])
+入力：
+- 目的：会議の目的
+- アジェンダ：会議のアジェンダ
+- 参加者：会議の参加者
+- 発言履歴：会議の発言履歴
+"""
     
-    model = get_llm()
+    model = init_gemini(system_prompt)
     
     def summarize(state: GraphState) -> GraphState:
-        messages = prompt.format_messages(
-            purpose=state["purpose"],
-            agenda=state["agenda"],
-            participants=state["participants"],
-            conversation_history=state["comment_history"]
+        prompt = {
+            "目的": state["purpose"],
+            "アジェンダ": state["agenda"],
+            "参加者": state["participants"],
+            "発言履歴": state["comment_history"]
+        }
+
+        response = model.generate_content(
+            str(prompt),
+            generation_config=genai.GenerationConfig(
+                temperature=0.3,
+                candidate_count=1,
+                response_mime_type="application/json",
+                response_schema=SummaryResponse
+            )
         )
-        response = model.invoke(messages)
-        state["summary"] = response.content
-        return state
+
+        try:
+            result = json.loads(response.text)
+            state["summary"] = result["要約"]
+            return state
+        except Exception as e:
+            print(f"Error processing summary: {e}")
+            state["summary"] = ""
+            return state
     
     return summarize
 
 # 会議評価ノード
 def create_evaluation_node():
-    prompt = ChatPromptTemplate.from_messages([
-        ("human", """あなたは会議の評価を行う専門家として、以下の情報をもとに会議の進行状況と内容を評価してください：
+    system_prompt = """あなたは進行途中の会議の評価を行う専門のAIです。
+与えられた入力を踏まえた上で、会議の評価を行ってください
 
-評価のポイント：
-1. アジェンダに沿った進行ができているか
-2. 参加者全員が適切に発言できているか
-3. 会議の目的に向かって議論が進んでいるか
-4. 時間の使い方は効率的か
+評価の観点：
+1. 会議の目的から脱線していないか
+2. 発言者が偏っていないか
+3. 発言者の意図が正確に伝わっているか
+4. 会議は進行途中であるため、必ずしもすべてのアジェンダを網羅しているとは限らない
+5. AIの発言内容は除外する
 
-具体的な例を挙げながら、改善点も指摘してください。
-
-会議の目的: {purpose}
-アジェンダ: {agenda}
-参加者: {participants}
-コメント履歴: {conversation_history}""")
-    ])
-    
-    model = get_llm()
+入力：
+- 目的：会議の目的
+- アジェンダ：会議のアジェンダ
+- 参加者：会議の参加者
+- 発言履歴：会議の発言履歴
+"""
+    model = init_gemini(system_prompt)
     
     def evaluate(state: GraphState) -> GraphState:
-        messages = prompt.format_messages(
-            purpose=state["purpose"],
-            agenda=state["agenda"],
-            participants=state["participants"],
-            conversation_history=state["comment_history"]
+        prompt = {
+            "目的": state["purpose"],
+            "アジェンダ": state["agenda"],
+            "参加者": state["participants"],
+            "発言履歴": state["comment_history"]
+        }
+
+        response = model.generate_content(
+            str(prompt),
+            generation_config=genai.GenerationConfig(
+                temperature=0.3,
+                candidate_count=1,
+                response_mime_type="application/json",
+                response_schema=EvaluationResponse
+            )
         )
-        response = model.invoke(messages)
-        state["evaluation"] = response.content
-        return state
+
+        try:
+            result = json.loads(response.text)
+            state["evaluation"] = result["評価"]
+            return state
+        except Exception as e:
+            print(f"Error processing evaluation: {e}")
+            state["evaluation"] = ""
+            return state
     
     return evaluate
 
 # 会議改善ノード
 def create_improvement_node():
-    prompt = ChatPromptTemplate.from_messages([
-        ("human", """あなたは会議の改善を提案する専門家として、以下の点について具体的な改善案を提案してください：
+    system_prompt = """あなたは進行途中の会議を改善する専門のAIです。
+以下の入力を踏まえた上で、会議の残り時間で出来る範囲で会議を改善してください。
 
-1. 残りの時間でどのように会議を進行すべきか
-2. 参加者の発言を促すためのアドバイス
-3. 会議の目的達成のための具体的なアクション
+改善のポイント：
+1. 時間配分を考慮した現実的な項目数（3項目以下）にする
+2. 言語化能力の不足など、参加者の能力に依存するような課題はAI自身で補うようにする
+3. 改善は、残りの会議時間でできるものに限る
+4. AIの発言内容は除外する
 
-提案は実践的で具体的なものにしてください。
-
-会議の評価結果: {evaluation}
-会議の目的: {purpose}
-アジェンダ: {agenda}
-参加者: {participants}""")
-    ])
+入力：
+- 目的：会議の目的
+- アジェンダ：会議のアジェンダ
+- 参加者：会議の参加者
+- 評価：会議の評価
+"""
     
-    model = get_llm()
+    model = init_gemini(system_prompt)
     
     def improve(state: GraphState) -> GraphState:
-        messages = prompt.format_messages(
-            evaluation=state["evaluation"],
-            purpose=state["purpose"],
-            agenda=state["agenda"],
-            participants=state["participants"]
+        prompt = {
+            "目的": state["purpose"],
+            "アジェンダ": state["agenda"],
+            "参加者": state["participants"],
+            "評価": state["evaluation"]
+        }
+
+        response = model.generate_content(
+            str(prompt),
+            generation_config=genai.GenerationConfig(
+                temperature=0.3,
+                candidate_count=1,
+                response_mime_type="application/json",
+                response_schema=ImprovementResponse
+            )
         )
-        response = model.invoke(messages)
-        state["improvement"] = response.content
-        return state
+
+        try:
+            result = json.loads(response.text)
+            state["improvement"] = result["改善案"]
+            return state
+        except Exception as e:
+            print(f"Error processing improvements: {e}")
+            state["improvement"] = ""
+            return state
     
     return improve
+
+def create_comment_node():
+    system_prompt = """あなたは進行途中の会議で人間を応援するAIです。
+会議の評価と改善案を踏まえて、端的に応援コメントをしてください。
+
+コメントのポイント：
+1. 会議は進行途中であるため、必ずしもすべてのアジェンダを網羅しているとは限らない
+2. コメントは1文程度の簡潔なもの
+3. 残りの会議を雰囲気よく進めやすくなるようなポップな表現にする
+
+入力：
+- 評価：会議の評価
+- 改善案：会議の改善案
+"""
+    
+    model = init_gemini(system_prompt)
+    
+    def comment(state: GraphState) -> GraphState:
+        prompt = {
+            "評価": state["evaluation"],
+            "改善案": state["improvement"]
+        }
+
+        response = model.generate_content(
+            str(prompt),
+            generation_config=genai.GenerationConfig(
+                temperature=0.3,
+                candidate_count=1,
+                response_mime_type="application/json",
+                response_schema=CommentResponse
+            )
+        )
+
+        try:
+            result = json.loads(response.text)
+            state["comment"] = result["コメント"]
+            return state
+        except Exception as e:
+            print(f"Error processing comment: {e}")
+            state["comment"] = ""
+            return state
+    
+    return comment
 
 def create_meeting_feedback_graph():
     # グラフの作成
@@ -183,6 +288,7 @@ def create_meeting_feedback_graph():
     workflow.add_node("summarize", create_summary_node())
     workflow.add_node("evaluate", create_evaluation_node())
     workflow.add_node("improve", create_improvement_node())
+    workflow.add_node("generate_comment", create_comment_node())
     
     # 条件付きエッジの設定
     def should_generate_agenda(state: GraphState) -> Dict[str, str]:
@@ -208,21 +314,23 @@ def create_meeting_feedback_graph():
     workflow.add_edge("generate_agenda", END)
     workflow.add_edge("summarize", "evaluate")
     workflow.add_edge("evaluate", "improve")
-    workflow.add_edge("improve", END)
+    workflow.add_edge("improve", "generate_comment")
+    workflow.add_edge("generate_comment", END)
     
     # 実行可能なグラフの取得
     return workflow.compile()
 
-# グラフの使用例
 def process_meeting_feedback(meeting_input: MeetingInput) -> Dict:
+    """会議フィードバックの処理"""
     graph = create_meeting_feedback_graph()
     
     # 初期状態の設定
     initial_state = GraphState(
         purpose=meeting_input.purpose,
-        agenda=meeting_input.agenda or [],  # Noneの場合は空リストを設定
+        agenda=meeting_input.agenda or [],
         participants=meeting_input.participants,
         comment_history=meeting_input.comment_history,
+        comment=None,
         summary=None,
         evaluation=None,
         improvement=None
@@ -234,13 +342,38 @@ def process_meeting_feedback(meeting_input: MeetingInput) -> Dict:
     # アジェンダ生成の場合は、アジェンダのみを返す
     if not meeting_input.agenda:
         return {
-            "agenda": result["agenda"]
+            "message": "アジェンダを作成しました。",
+            "detail": AgendaResponse(
+                agenda=result["agenda"]
+            )
         }
     
-    # 通常のフィードバックの場合は全ての情報を返す
+    # 通常のフィードバックの場合は新しい構造で返す
     return {
-        "agenda": result["agenda"],
-        "summary": result["summary"],
-        "evaluation": result["evaluation"],
-        "improvements": result["improvement"]
-    } 
+        "message": result["comment"],
+        "detail": DetailResponse(
+            summary=result["summary"],
+            evaluation=result["evaluation"],
+            improvement=result["improvement"]
+        )
+    }
+
+class AgendaResponse(TypedDict):
+    アジェンダ: list[str]
+
+class SummaryResponse(TypedDict):
+    要約: str
+
+class EvaluationResponse(TypedDict):
+    評価: str
+
+class ImprovementResponse(TypedDict):
+    改善案: str
+
+class CommentResponse(TypedDict):
+    コメント: str
+
+class DetailResponse(TypedDict):
+    要約: str
+    評価: str
+    改善案: str 
