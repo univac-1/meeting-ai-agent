@@ -25,10 +25,10 @@ const HomePage = () => {
           <div className={styles.text}>Meeting With AI Agent</div>
         </div>
         <div className={styles.btn} onClick={onClickSchedule}>
-          schedule meeting
+          Schedule Meeting
         </div>
         <div className={styles.btn} onClick={onClickJoin}>
-          join meeting
+          Join Meeting
         </div>
         <div className={styles.version}>Version {version}</div>
       </section>

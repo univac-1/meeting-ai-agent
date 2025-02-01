@@ -95,7 +95,7 @@ const JoinPage = () => {
           />
         </div>
         <div className={styles.btn} onClick={onClickJoin}>
-          join meeting
+          Join Meeting
         </div>
       </section>
     </div>
