@@ -38,6 +38,7 @@ export interface InitialState {
   memberListShow: boolean
   dialogRecordShow: boolean
   captionShow: boolean
+  minutesShow: boolean
   aiShow: boolean
   tipSTTEnable: boolean
   menuList: MenuType[]
@@ -61,6 +62,7 @@ const getInitialState = (): InitialState => {
     memberListShow: false,
     dialogRecordShow: false,
     captionShow: false,
+    minutesShow: false,
     aiShow: false,
     captionLanguages: ["live"],
     sttSubtitles: [],
@@ -100,6 +102,9 @@ export const globalSlice = createSlice({
     },
     setAIShow: (state, action: PayloadAction<boolean>) => {
       state.aiShow = action.payload
+    },
+    setMinutesShow: (state, action: PayloadAction<boolean>) => {
+      state.minutesShow = action.payload
     },
     addMenuItem: (state, action: PayloadAction<MenuType>) => {
       const index = state.menuList.findIndex((item) => item === action.payload)
@@ -242,6 +247,7 @@ export const {
   setDialogRecordShow,
   setCaptionShow,
   setAIShow,
+  setMinutesShow,
   addMenuItem,
   removeMenuItem,
   setLocalVideoMute,

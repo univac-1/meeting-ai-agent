@@ -1,4 +1,4 @@
-import { TranscriptionIcon, AiIcon } from "@/components/icons"
+import { TranscriptionIcon, AiIcon, MinutesIcon } from "@/components/icons"
 import { CloseOutlined } from "@ant-design/icons"
 import { RootState } from "@/store"
 import { useSelector, useDispatch } from "react-redux"
@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react"
 import { MenuType } from "@/types"
 import {
   setAIShow,
+  setMinutesShow,
   setDialogRecordShow,
   removeMenuItem,
   addMenuItem,
@@ -19,8 +20,10 @@ const MenuTitle = () => {
   const activeType = menuList[0]
 
   const TitleOneText = useMemo(() => {
-    if (activeType == "AI") {
+    if (activeType === "AI") {
       return "AI Assistant"
+    } else if (activeType === "Minutes") {
+      return "Minutes"
     } else {
       return "Conversation History"
     }
@@ -31,6 +34,9 @@ const MenuTitle = () => {
     if (activeType === "AI") {
       dispatch(setAIShow(false))
       dispatch(removeMenuItem("AI"))
+    } else if (activeType === "Minutes") {
+      dispatch(setMinutesShow(false))
+      dispatch(removeMenuItem("Minutes"))
     } else {
       dispatch(setDialogRecordShow(false))
       dispatch(removeMenuItem("DialogRecord"))
@@ -58,6 +64,16 @@ const MenuTitle = () => {
             <TranscriptionIcon width={16} height={16}></TranscriptionIcon>
             <span className={styles.text}>Conversation History</span>
             {activeType == "DialogRecord" ? (
+              <CloseOutlined style={{ fontSize: "12px" }} onClick={onClickClose} />
+            ) : null}
+          </span>
+          <span
+            className={`${styles.item} ${activeType == "Minutes" ? "active" : ""}`}
+            onClick={() => onClickItem("Minutes")}
+          >
+            <MinutesIcon width={16} height={16}></MinutesIcon>
+            <span className={styles.text}>Minutes</span>
+            {activeType == "Minutes" ? (
               <CloseOutlined style={{ fontSize: "12px" }} onClick={onClickClose} />
             ) : null}
           </span>

@@ -7,6 +7,7 @@ import {
   setDialogRecordShow,
   setCaptionShow,
   setAIShow,
+  setMinutesShow,
   removeMenuItem,
   addMenuItem,
   setLocalAudioMute,
@@ -36,6 +37,7 @@ const Footer = (props: IFooterProps) => {
   const captionShow = useSelector((state: RootState) => state.global.captionShow)
   const tipSTTEnable = useSelector((state: RootState) => state.global.tipSTTEnable)
   const aiShow = useSelector((state: RootState) => state.global.aiShow)
+  const minutesShow = useSelector((state: RootState) => state.global.minutesShow)
   const sttData = useSelector((state: RootState) => state.global.sttData)
 
   useEffect(() => {
@@ -91,11 +93,11 @@ const Footer = (props: IFooterProps) => {
   }
 
   const onClickMinutesShow = () => {
-    dispatch(setAIShow(!aiShow))
-    if (aiShow) {
-      dispatch(removeMenuItem("AI"))
+    dispatch(setMinutesShow(!minutesShow))
+    if (minutesShow) {
+      dispatch(removeMenuItem("Minutes"))
     } else {
-      dispatch(addMenuItem("AI"))
+      dispatch(addMenuItem("Minutes"))
     }
   }
 
@@ -142,7 +144,7 @@ const Footer = (props: IFooterProps) => {
         </span>
         {/* minutes */}
         <span className={styles.item} onClick={onClickMinutesShow}>
-          <MinutesIcon active={aiShow}></MinutesIcon>
+          <MinutesIcon active={minutesShow}></MinutesIcon>
           <span className={styles.text}>Minutes</span>
         </span>
         {/* ai */}
