@@ -1,0 +1,17 @@
+{
+    "meeting_purpose": "プロジェクトの進捗を確認する",
+    "agenda": [
+        {"topic": "参加者から現状を共有", "duration": "10分"},
+        {"topic": "参加者の課題について議論", "duration": "10分"},
+        {"topic": "ネクストアクションを決定", "duration": "10分"}
+    ],
+    "start_date": "2025-01-26",
+    "start_time": "10:00",
+    "end_time": "10:30",
+    "meeting_name": "プロジェクト定例",
+    "participants": ["A", "B", "C"],
+    "comment_history": [
+        {"speaker": "A", "message": "認証機能の実装、進捗どうですか？", "speak_at": "2025-01-26 10:08:00"},
+        {"speaker": "B", "message": "仕様が詰められてなくて、進めるのが難しいです。", "speak_at": "2025-01-26 10:08:10"}
+    ]
+}
