@@ -25,7 +25,17 @@
     "languageExport": "Language Export",
     "languageExportTip": "Please select the language to export"
   },
-  "login": {
+  "home": {
+    "schedule": "schedule meeting",
+    "join": "join meeting",
+    "title": "Meeting With AI Agent"
+  },
+  "schedule": {
+    "github": "Visit GitHub",
+    "join": "join channel",
+    "title": "Schedule Meeting"
+  },
+  "join": {
     "github": "Visit GitHub",
     "join": "join channel",
     "title": "Real-Time Transcription"

@@ -13,7 +13,9 @@ import styles from "./index.module.scss"
 import logoSrc from "@/assets/login_logo.png"
 import githubSrc from "@/assets/github.jpg"
 
-const LoginPage = () => {
+const { TextArea } = Input
+
+const SchedulePage = () => {
   const nav = useNavigate()
   const location = useLocation()
   const { t, i18n } = useTranslation()
@@ -23,6 +25,8 @@ const LoginPage = () => {
   const [channel, setChannel] = useState("")
   const [userName, setUserName] = useState("")
   const [channelInputStatuses, setChannelInputStatuses] = useState<InputStatuses>("")
+  const [meetingName, setMeetingName] = useState("")
+  const [meetingPurpose, setMeetingPurpose] = useState("")
 
   const onChangeChannel = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value
@@ -68,9 +72,9 @@ const LoginPage = () => {
       }),
     )
     if (location.search) {
-      nav(`/home?${location.search.slice(1)}`)
+      nav(`/meeting?${location.search.slice(1)}`)
     } else {
-      nav("/home")
+      nav("/meeting")
     }
   }
 
@@ -79,29 +83,31 @@ const LoginPage = () => {
   }
 
   return (
-    <div className={styles.loginPage}>
+    <div className={styles.schedulePage}>
       {contextHolder}
       <section className={styles.content}>
-        <section className={styles.top}>
-          <span className={styles.github} onClick={onClickGithub}>
-            <img src={githubSrc} alt="" />
-            <span className={styles.text}>{t("login.github")}</span>
-          </span>
-          <span className={styles.language}>
-            <Switch
-              size="default"
-              checkedChildren="中文"
-              unCheckedChildren="English"
-              value={options.language === "zh"}
-              onChange={onLanguageChange}
-            />
-          </span>
-        </section>
         <div className={styles.title}>
           <div className={styles.logo}>
             <img src={logoSrc} alt="" />
           </div>
-          <div className={styles.text}>{t("login.title")}</div>
+          <div className={styles.text}>{t("schedule.title")}</div>
+        </div>
+        <div className={styles.item}>
+          <Input
+            allowClear
+            placeholder="会議名を入力してください"
+            onChange={(e) => setMeetingName(e.target.value)}
+            value={meetingName}
+          />
+        </div>
+        <div className={styles.item}>
+          <TextArea
+            allowClear
+            placeholder="会議の目的を入力してください"
+            onChange={(e) => setMeetingPurpose(e.target.value)}
+            value={meetingPurpose}
+            rows={4}
+          />
         </div>
         <div className={styles.item}>
           <Input
@@ -121,7 +127,7 @@ const LoginPage = () => {
           />
         </div>
         <div className={styles.btn} onClick={onClickJoin}>
-          {t("login.join")}
+          {t("schedule.join")}
         </div>
         <div className={styles.version}>Version {version}</div>
       </section>
@@ -129,4 +135,4 @@ const LoginPage = () => {
   )
 }
 
-export default LoginPage
+export default SchedulePage
