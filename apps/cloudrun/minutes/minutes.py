@@ -71,7 +71,7 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
                 },
                 "due_date": {
                     "type": "string",
-                    "description": "Due date for the action plan in YYYY-MM-DD format. Leave empty if the due date is uncertain. Do NOT guess an approximate date.",
+                    "description": "If the due date is uncertain, leave it empty. Do NOT guess an approximate date. Use YYYY-MM-DD format only for confirmed deadlines.",
                 },
             },
         },
