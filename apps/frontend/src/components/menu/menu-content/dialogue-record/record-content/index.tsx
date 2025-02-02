@@ -10,11 +10,70 @@ import styles from "./index.module.scss"
 
 let lastScrollTop = 0
 
+const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
+
+function base64ToBlob(base64Data: string, contentType: string): Blob {
+  const byteCharacters = atob(base64Data);
+  const byteArrays: Uint8Array[] = [];
+
+  for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+    const slice = byteCharacters.slice(offset, offset + 512);
+
+    const byteNumbers: number[] = new Array(slice.length);
+    for (let i = 0; i < slice.length; i++) {
+      byteNumbers[i] = slice.charCodeAt(i);
+    }
+
+    const byteArray = new Uint8Array(byteNumbers);
+    byteArrays.push(byteArray);
+  }
+
+  return new Blob(byteArrays, { type: contentType });
+}
+
+const handleTextToSpeech = async (text: string): Promise<void> => {
+  try {
+    const response = await fetch(
+      `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          input: { text },
+          voice: {
+            languageCode: "ja-JP",
+            ssmlGender: "NEUTRAL",
+          },
+          audioConfig: {
+            audioEncoding: "MP3",
+            speakingRate: "1.5",
+            volumeGainDb: "-90.0",
+          },
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.audioContent) {
+      const audioBlob = base64ToBlob(data.audioContent, "audio/mp3");
+      const url = URL.createObjectURL(audioBlob);
+      const audio = new Audio(url);
+      await audio.play();
+    }
+  } catch (error) {
+    console.error("音声合成に失敗した:", error);
+  }
+};
+
 const RecordContent = () => {
   const contentRef = useRef<HTMLElement>(null)
   const [humanScroll, setHumanScroll] = useState(false)
   const [chatList, setChatList] = useState<ICommentItem[]>([])
   const meetingId = useSelector((state: RootState) => state.global.meetingId)
+  const initialLoadRef = useRef(true);
 
   useEffect(() => {
     if (!meetingId) return
@@ -22,17 +81,29 @@ const RecordContent = () => {
     const q = query(commentsRef, orderBy("speak_at"))
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const messageHistory: ICommentItem[] = []
-      querySnapshot.forEach((doc) => {
-        const data = doc.data() as ICommentItem
-        data.speaker = data.speaker.toString()
-        messageHistory.push(data)
-        
-        // AIコメントを検出して処理を行う
-        if (data?.meta && data?.meta?.role === "ai") {
-          handleAIComment(data)
+      // 全ドキュメントからメッセージ履歴を構築
+      const messageHistory: ICommentItem[] = querySnapshot.docs.map(doc => {
+        const data = doc.data() as ICommentItem;
+        data.speaker = data.speaker.toString();
+        return data;
+      });
+
+      // 新しく追加されたドキュメントに対してのみ処理
+      querySnapshot.docChanges().forEach(change => {
+        if (change.type === "added") {
+          const data = change.doc.data() as ICommentItem;
+          data.speaker = data.speaker.toString();
+          if (!initialLoadRef.current && data?.meta && data?.meta?.role === "ai") {
+            handleAIComment(data);
+          }
         }
-      })
+      });
+
+      // 初回読み込み完了後にフラグを更新
+      if (initialLoadRef.current) {
+        initialLoadRef.current = false;
+      }
+
       setChatList(messageHistory)
     })
 
@@ -72,6 +143,7 @@ const RecordContent = () => {
 
   const handleFeedback = (aiComment: ICommentItem) => {
     console.log("フィードバックコメントを処理します:", aiComment.message);
+    handleTextToSpeech(aiComment.message);
     // フィードバックに関する処理をここに追加
   };
 
