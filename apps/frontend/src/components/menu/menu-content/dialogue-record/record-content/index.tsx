@@ -27,12 +27,53 @@ const RecordContent = () => {
         const data = doc.data() as ICommentItem
         data.speaker = data.speaker.toString()
         messageHistory.push(data)
+        
+        // AIコメントを検出して処理を行う
+        if (data?.meta && data?.meta?.role === "ai") {
+          handleAIComment(data)
+        }
       })
       setChatList(messageHistory)
     })
 
     return () => unsubscribe()
   }, [meetingId])
+
+  const handleAIComment = (aiComment: ICommentItem) => {
+    if (!aiComment.meta || !aiComment.meta.type) {
+      console.warn("AIコメントのタイプが不明です:", aiComment);
+      return;
+    }
+
+    switch (aiComment.meta.type) {
+      case "evaluation":
+        handleEvaluation(aiComment);
+        break;
+      case "summary":
+        handleSummary(aiComment);
+        break;
+      case "feedback":
+        handleFeedback(aiComment);
+        break;
+      default:
+        console.warn("未対応のAIコメントタイプです:", aiComment.meta.type);
+    }
+  };
+
+  const handleEvaluation = (aiComment: ICommentItem) => {
+    console.log("評価コメントを処理します:", aiComment.message);
+    // 評価に関する処理をここに追加
+  };
+
+  const handleSummary = (aiComment: ICommentItem) => {
+    console.log("要約コメントを処理します:", aiComment.message);
+    // 要約に関する処理をここに追加
+  };
+
+  const handleFeedback = (aiComment: ICommentItem) => {
+    console.log("フィードバックコメントを処理します:", aiComment.message);
+    // フィードバックに関する処理をここに追加
+  };
 
   const onScroll = (e: any) => {
     const scrollTop = contentRef.current?.scrollTop ?? 0
@@ -75,7 +116,13 @@ const RecordContent = () => {
               </div>
             </div>
             <div className={styles.bottom}>
-              <div className={styles.content}>{item.message}</div>
+              <div className={styles.content}>
+                {item.meta && item.meta?.role === "ai" ? (
+                  <span className={styles.aiMessage}>{item.message}</span>
+                ) : (
+                  item.message
+                )}
+              </div>
             </div>
           </div>
         </div>
