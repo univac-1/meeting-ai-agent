@@ -90,5 +90,8 @@ export interface ICommentItem {
   message: string
   speak_at: string
   speaker: string
-  detail: any | null
+  meta?: {
+    role?: string
+    type?: string
+  }
 }
