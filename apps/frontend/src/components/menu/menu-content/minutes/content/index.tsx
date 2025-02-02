@@ -16,11 +16,12 @@ const Content = () => {
     { task: string; assigned_to: string; due_date: string }[]
   >([])
   const meetingId = useSelector((state: RootState) => state.global.meetingId)
-  console.log("### meetingId #$##")
-  console.log(meetingId)
 
   useEffect(() => {
-    if (!meetingId) return
+    if (!meetingId) {
+      alert("エラー: meetingId が指定されていません")
+      return
+    }
     const minutesDocRef = doc(db, "meetings", meetingId, "minutes", "all_minutes")
 
     const unsubscribe = onSnapshot(minutesDocRef, (docSnapshot) => {
