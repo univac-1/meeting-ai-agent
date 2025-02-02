@@ -1,4 +1,4 @@
-from agent.meeting_feedback_graph import process_meeting_feedback, MeetingInput
+from cloudrun.agent.feedback_agent import process_meeting_feedback, MeetingInput
 import json
 import os
 
