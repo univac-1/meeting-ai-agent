@@ -50,6 +50,8 @@ window.rtcManager = rtcManager
 window.rtmManager = rtmManager
 window.sttManager = sttManager
 
+type StatusType = "init" | "recording" | "ready";
+
 const MeetingPage = () => {
   const dispatch = useDispatch()
   const nav = useNavigate()
@@ -74,63 +76,47 @@ const MeetingPage = () => {
 
   const { transcript, listening, browserSupportsSpeechRecognition } = useSpeechRecognition()
 
+  const [status, setStatus] = useState<StatusType>("init");
+
+  // 以下、MediaRecorder 関連のインスタンスを useRef で保持
+  const streamRef = useRef<MediaStream | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const audioDataRef = useRef<Blob[]>([]);
+
+  // APIキーやメッセージ送信 API のエンドポイント（適宜修正）
+  const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY
+
   // init
   useEffect(() => {
     if (!userInfo.userId) {
       dispatch(addMessage({ content: "Please login first", type: "error" }))
       nav("/")
     }
-    init()
+    startVoiceRecognition();
+    init();
 
     return () => {
-      destory()
+      destory();
+      stopVoiceRecognition();
     }
   }, [])
 
+  // useSpeechRecognition による listening の変化に合わせ、録音開始／停止する
   useEffect(() => {
-    let timer: any
-
-    if (sttData.status == "start") {
-      timer = setInterval(async () => {
-        const now = new Date().getTime()
-        if (sttData?.startTime && sttData?.duration) {
-          if (now - sttData?.startTime > sttData?.duration) {
-            await window.sttManager.stopTranscription()
-            return clearInterval(timer)
-          }
-        }
-      }, 5000)
+    if (!browserSupportsSpeechRecognition) {
+      console.warn("Browser doesn't support speech recognition.")
+      return
     }
-
-    return () => {
-      timer && clearInterval(timer)
+    if (listening) {
+      console.log("[useEffect] listening true 発話開始検知 → startRecording");
+      startRecording();
+    } else {
+      console.log("[useEffect] listening false 発話終了検知 → stopRecording");
+      stopRecording();
     }
-  }, [sttData])
+  }, [listening, browserSupportsSpeechRecognition])
 
-  useEffect(() => {
-    if (isMounted) {
-      if (sttData.status == "start") {
-        dispatch(
-          setRecordLanguageSelect({
-            translate1List: [],
-            translate2List: [],
-          }),
-        )
-        sttManager.setOption({
-          taskId: sttData.taskId ?? "",
-          token: sttData.token ?? "",
-        })
-        dispatch(setSubtitles([]))
-        dispatch(addMessage({ content: "STT started", type: "success" }))
-      } else if (sttData.status == "end") {
-        sttManager.removeOption()
-        dispatch(setCaptionShow(false))
-        dispatch(addMessage({ content: "STT stopped", type: "success" }))
-      }
-    }
-    // do not put isMounted in the dependencies
-  }, [sttData.status])
-
+  // localAudioMute による SpeechRecognition の開始／停止制御
   useEffect(() => {
     if (!browserSupportsSpeechRecognition) {
       console.warn("Browser doesn't support speech recognition.")
@@ -139,34 +125,35 @@ const MeetingPage = () => {
 
     if (!localAudioMute) {
       if (!listening) {
-        SpeechRecognition.startListening()
+        SpeechRecognition.startListening();
       }
     } else {
       if (listening) {
-        SpeechRecognition.stopListening()
+        SpeechRecognition.stopListening();
       }
     }
   }, [localAudioMute, listening, browserSupportsSpeechRecognition])
 
+  // useSpeechRecognition の transcript の変化によるメッセージ送信（既存処理）
   useEffect(() => {
     if (!localAudioMute && transcript) {
-      console.log(`${userName}「${transcript}」`)
-      axios
-        .post(
-          `${CLOUD_RUN_ENDPOINT}/message`,
-          {
-            meeting_id: channel,
-            speaker: userName,
-            message: transcript,
-          },
-          {
-            headers: {
-              "Content-type": "application/json; charset=UTF-8",
-            },
-          },
-        )
-        .then((response) => console.log(response.data))
-        .catch((error) => console.error("Error:", error))
+      console.log("[WebSpeechAPI] 認識結果:", transcript);
+      // axios
+      //   .post(
+      //     `${CLOUD_RUN_ENDPOINT}/message`,
+      //     {
+      //       meeting_id: channel,
+      //       speaker: userName,
+      //       message: transcript,
+      //     },
+      //     {
+      //       headers: {
+      //         "Content-type": "application/json; charset=UTF-8",
+      //       },
+      //     }
+      //   )
+      //   .then((response) => console.log("[message] 送信成功:", response.data))
+      //   .catch((error) => console.error("[message] エラー:", error))
     }
   }, [listening, localAudioMute])
 
@@ -187,33 +174,6 @@ const MeetingPage = () => {
 
     return map
   }, [userRtmList, userInfo])
-
-  // listen events
-  useEffect(() => {
-    window.rtmManager.on("userListChanged", onRtmUserListChanged)
-    window.rtmManager.on("languagesChanged", onLanguagesChanged)
-    window.rtmManager.on("sttDataChanged", onSttDataChanged)
-    window.rtcManager.on("localUserChanged", onLocalUserChanged)
-    window.rtcManager.on("remoteUserChanged", onRemoteUserChanged)
-    window.rtcManager.on("textstreamReceived", onTextStreamReceived)
-
-    return () => {
-      window.rtmManager.off("userListChanged", onRtmUserListChanged)
-      window.rtmManager.off("languagesChanged", onLanguagesChanged)
-      window.rtmManager.off("sttDataChanged", onSttDataChanged)
-      window.rtcManager.off("localUserChanged", onLocalUserChanged)
-      window.rtcManager.off("remoteUserChanged", onRemoteUserChanged)
-      window.rtcManager.off("textstreamReceived", onTextStreamReceived)
-    }
-  }, [simpleUserMap])
-
-  useEffect(() => {
-    localTracks?.videoTrack?.setMuted(localVideoMute)
-  }, [localTracks?.videoTrack, localVideoMute])
-
-  useEffect(() => {
-    localTracks?.audioTrack?.setMuted(localAudioMute)
-  }, [localTracks?.audioTrack, localAudioMute])
 
   const userDataList = useMemo(() => {
     const list: IUserData[] = []
@@ -236,7 +196,6 @@ const MeetingPage = () => {
   }, [simpleUserMap, userInfo, localTracks, centerUserId, rtcUserMap])
 
   const curUserData = useMemo(() => {
-    console.log("[test] curUserData", userDataList)
     return userDataList[0] as IUserData
   }, [userDataList])
 
@@ -253,56 +212,185 @@ const MeetingPage = () => {
         channel,
       }),
     ])
-    await rtcManager.publish()
+    await rtcManager.publish();
   }
 
   const destory = async () => {
-    await Promise.all([rtcManager.destroy(), sttManager.destroy()])
-    dispatch(reset())
-  }
-
-  const onLocalUserChanged = (tracks: IUserTracks) => {
-    setLocalTracks(tracks)
-    if (tracks.videoTrack) {
-      dispatch(setLocalVideoMute(false))
-    }
-    if (tracks.audioTrack) {
-      dispatch(setLocalAudioMute(false))
-    }
-  }
-
-  const onRtmUserListChanged = (list: ISimpleUserInfo[]) => {
-    console.log("[test] onRtmUserListChanged", list)
-    setRtmUserList(list)
-  }
-
-  const onRemoteUserChanged = (user: IRtcUser) => {
-    setRtcUserMap((prev) => {
-      const newMap = new Map(prev)
-      newMap.set(Number(user.userId), user)
-      return newMap
-    })
-  }
-
-  const onSttDataChanged = (data: ISttData) => {
-    console.log("[test] onSttDataChanged", data)
-    dispatch(setSttData(data))
-  }
-
-  const onTextStreamReceived = (textstream: ITextstream) => {
-    // modify subtitle list
-    const targetUser = simpleUserMap.get(Number(textstream.uid))
-    dispatch(updateSubtitles({ textstream, username: targetUser?.userName || "" }))
-  }
-
-  const onLanguagesChanged = (languages: ILanguageSelect) => {
-    console.log("[test] onLanguagesChanged", languages)
-    dispatch(setLanguageSelect(languages))
+    await Promise.all([rtcManager.destroy(), sttManager.destroy()]);
+    dispatch(reset());
   }
 
   const onClickUserListItem = (data: IUserData) => {
     setCenterUserId(data.userId)
   }
+
+  /**
+   * マイクからのストリーム取得後に MediaRecorder を初期化する
+   */
+  const startVoiceRecognition = async (): Promise<void> => {
+    try {
+      const stream: MediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+      streamRef.current = stream;
+      initializeRecorder();
+      setStatus("ready");
+    } catch (error) {
+    }
+  };
+
+  /**
+   * MediaRecorder の初期化処理
+   */
+  const initializeRecorder = (): void => {
+    if (!streamRef.current) return;
+    const recorder = new MediaRecorder(streamRef.current);
+    recorderRef.current = recorder;
+    audioDataRef.current = [];
+    recorder.addEventListener("dataavailable", (event: BlobEvent) => {
+      audioDataRef.current.push(event.data);
+    });
+    recorder.addEventListener("stop", handleRecordingStop);
+  };
+
+  /**
+   * 録音開始処理
+   */
+  const startRecording = (): void => {
+    if (!recorderRef.current) return;
+    audioDataRef.current = [];
+    try {
+      recorderRef.current.start();
+      setStatus("recording");
+    } catch (error) {
+    }
+  };
+
+  /**
+   * 録音停止処理
+   */
+  const stopRecording = (): void => {
+    if (!recorderRef.current || recorderRef.current.state !== "recording") return;
+    try {
+      recorderRef.current.stop();
+      setStatus("ready");
+    } catch (error) {
+    }
+  };
+
+  /**
+   * 録音停止時の処理
+   * 録音された Blob を Base64 に変換し、Google Cloud Speech-to-Text API へ送信する
+   */
+  const handleRecordingStop = (): void => {
+    const audioBlob: Blob = new Blob(audioDataRef.current);
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (reader.result instanceof ArrayBuffer) {
+        const uint8Array = new Uint8Array(reader.result);
+        const base64Audio = arrayBufferToBase64(uint8Array);
+        googleCloudSpeechToTextAPI(base64Audio);
+      }
+    };
+    reader.readAsArrayBuffer(audioBlob);
+  };
+
+  /**
+   * ArrayBuffer を Base64 に変換する処理
+   */
+  const arrayBufferToBase64 = (buffer: ArrayBuffer | Uint8Array): string => {
+    let binary = "";
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64 = window.btoa(binary);
+    return base64;
+  };
+
+  /**
+   * Google Cloud Speech-to-Text API へ録音データを送信する
+   */
+  const googleCloudSpeechToTextAPI = async (base64Audio: string): Promise<void> => {
+    const content = {
+      config: {
+        languageCode: "ja-JP",
+        sampleRateHertz: 44100,
+        encoding: "MP3",
+        enableAutomaticPunctuation: true,
+        model: "default",
+      },
+      audio: {
+        content: base64Audio,
+      },
+    };
+
+    try {
+      const response = await fetch(
+        `https://speech.googleapis.com/v1/speech:recognize?key=${GOOGLE_API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+          },
+          body: JSON.stringify(content),
+        }
+      );
+      const resultJson = await response.json();
+      const resultTranscript =
+        resultJson.results?.[0]?.alternatives?.[0]?.transcript || "";
+      console.log("[googleCloudSpeechToTextAPI] 認識結果:", resultTranscript);
+      if (resultTranscript) {
+        sendMessage(resultTranscript);
+      }
+    } catch (error) {
+      console.error("[googleCloudSpeechToTextAPI] エラー:", error);
+    }
+  };
+
+  /**
+   * 取得したテキストを既存のメッセージ送信 API に渡す処理
+   */
+  const sendMessage = async (text: string): Promise<void> => {
+    try {
+      const response = await axios.post(
+        `${CLOUD_RUN_ENDPOINT}/message`,
+        {
+          meeting_id: channel,
+          speaker: userName,
+          message: text,
+        },
+        {
+          headers: {
+            "Content-type": "application/json; charset=UTF-8",
+          },
+        }
+      );
+      console.log("[sendMessage] メッセージ送信成功", response.data);
+    } catch (error) {
+      console.error("[sendMessage] メッセージ送信エラー:", error);
+    }
+  };
+
+  /**
+   * 音声認識および録音を完全に停止する処理
+   */
+  const stopVoiceRecognition = (): void => {
+    console.log("[stopVoiceRecognition] 停止処理開始");
+    if (recorderRef.current && recorderRef.current.state === "recording") {
+      recorderRef.current.stop();
+      console.log("[stopVoiceRecognition] 録音停止");
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      console.log("[stopVoiceRecognition] ストリーム停止");
+    }
+    setStatus("init");
+  };
 
   return (
     <div className={styles.meetingPage}>
