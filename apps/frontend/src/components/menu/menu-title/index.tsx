@@ -57,36 +57,42 @@ const MenuTitle = () => {
         </div>
       ) : (
         <div className={styles.titleTwo}>
-          <span
-            className={`${styles.item} ${activeType == "DialogRecord" ? "active" : ""}`}
-            onClick={() => onClickItem("DialogRecord")}
-          >
-            <TranscriptionIcon width={16} height={16}></TranscriptionIcon>
-            <span className={styles.text}>Conversation History</span>
-            {activeType == "DialogRecord" ? (
-              <CloseOutlined style={{ fontSize: "12px" }} onClick={onClickClose} />
-            ) : null}
-          </span>
-          <span
-            className={`${styles.item} ${activeType == "Minutes" ? "active" : ""}`}
-            onClick={() => onClickItem("Minutes")}
-          >
-            <MinutesIcon width={16} height={16}></MinutesIcon>
-            <span className={styles.text}>Minutes</span>
-            {activeType == "Minutes" ? (
-              <CloseOutlined style={{ fontSize: "12px" }} onClick={onClickClose} />
-            ) : null}
-          </span>
-          <span
-            className={`${styles.item} ${activeType == "AI" ? "active" : ""}`}
-            onClick={() => onClickItem("AI")}
-          >
-            <AiIcon width={16} height={16}></AiIcon>
-            <span className={styles.text}>AI Assistant</span>
-            {activeType == "AI" ? (
-              <CloseOutlined style={{ fontSize: "12px" }} onClick={onClickClose} />
-            ) : null}
-          </span>
+          {menuList.includes("DialogRecord") ? (
+            <span
+              className={`${styles.item} ${activeType == "DialogRecord" ? "active" : ""}`}
+              onClick={() => onClickItem("DialogRecord")}
+            >
+              <TranscriptionIcon width={16} height={16}></TranscriptionIcon>
+              <span className={styles.text}>Conversation History</span>
+              {activeType == "DialogRecord" ? (
+                <CloseOutlined style={{ fontSize: "12px" }} onClick={onClickClose} />
+              ) : null}
+            </span>
+          ) : null}
+          {menuList.includes("Minutes") ? (
+            <span
+              className={`${styles.item} ${activeType == "Minutes" ? "active" : ""}`}
+              onClick={() => onClickItem("Minutes")}
+            >
+              <MinutesIcon width={16} height={16}></MinutesIcon>
+              <span className={styles.text}>Minutes</span>
+              {activeType == "Minutes" ? (
+                <CloseOutlined style={{ fontSize: "12px" }} onClick={onClickClose} />
+              ) : null}
+            </span>
+          ) : null}
+          {menuList.includes("AI") ? (
+            <span
+              className={`${styles.item} ${activeType == "AI" ? "active" : ""}`}
+              onClick={() => onClickItem("AI")}
+            >
+              <AiIcon width={16} height={16}></AiIcon>
+              <span className={styles.text}>AI Assistant</span>
+              {activeType == "AI" ? (
+                <CloseOutlined style={{ fontSize: "12px" }} onClick={onClickClose} />
+              ) : null}
+            </span>
+          ) : null}
         </div>
       )}
     </div>
