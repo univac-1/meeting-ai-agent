@@ -59,7 +59,7 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
                 },
                 "add_action_plan": {
                     "type": "boolean",
-                    "description": "Whether an action plan should be added",
+                    "description": "Whether an action plan should be added. Only set to true if there is a clear, actionable next step that requires tracking and follow-up.",
                 },
                 "action_plan_text": {
                     "type": "string",
