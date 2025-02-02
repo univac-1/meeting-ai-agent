@@ -13,6 +13,7 @@ class Config:
     FIRESTORE_COMMENT_COLLECTION = "comments"
     FIRESTORE_MINUTES_COLLECTION = "minutes"
     FIRESTORE_ALL_MINUTES_DOCUMENT = "all_minutes"
+    FIRESTORE_FEEDBACKS_COLLECTION = "feedbacks"
 
     # GCPのPROJECT_ID
     PROJECT_ID = os.getenv("PROJECT_ID")

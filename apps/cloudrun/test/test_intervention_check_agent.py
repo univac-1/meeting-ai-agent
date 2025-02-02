@@ -1,6 +1,6 @@
 import json
 import os
-from models import MeetingInput, Message
+from agent.feedback_agent import FeedbackMeetingInput
 from agent.intervention_check_agent import should_intervene
 
 def load_test_data(filename: str) -> dict:
