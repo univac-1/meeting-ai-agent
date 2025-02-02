@@ -1,6 +1,7 @@
 import { useSelector, useDispatch } from "react-redux"
 import { addMenuItem } from "@/store/reducers/global"
 import AiAssistant, { AiAssistantHandler } from "./ai-assistant"
+import Minutes from "./minutes"
 import DialogueRecord from "./dialogue-record"
 import { RootState } from "@/store"
 import { useRef } from "react"
@@ -24,6 +25,8 @@ const MenuContent = () => {
     <div className={styles.menuContent}>
       {activeType === "AI" ? (
         <AiAssistant ref={aiAssistantRef}></AiAssistant>
+      ) : activeType === "Minutes" ? (
+        <Minutes />
       ) : (
         <DialogueRecord onExport={onExport}></DialogueRecord>
       )}

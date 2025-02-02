@@ -21,6 +21,7 @@ jobs:
         env:
           VITE_AGORA_APP_ID: ${{ secrets.VITE_AGORA_APP_ID }}
           VITE_AGORA_APP_CERTIFICATE: ${{ secrets.VITE_AGORA_APP_CERTIFICATE }}
+          VITE_GOOGLE_API_KEY: ${{ secrets.VITE_GOOGLE_API_KEY }}
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
