@@ -1,9 +1,8 @@
-from typing import Optional, List, Tuple, TypedDict
-from datetime import datetime
+from typing import Optional, Tuple, TypedDict
 import json
 import os
 import google.generativeai as genai
-from models import MeetingInput, Message
+from models import MeetingInput
 from config import Config
 
 SYSTEM_PROMPT = """あなたは会議のファシリテータとして、会議の進行状況を監視し、介入が必要かどうかを判断します。

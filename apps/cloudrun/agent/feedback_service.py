@@ -1,10 +1,11 @@
 from typing import Dict, Optional
-import json
 from config import Config
 from message.message import get_message_history, post_message
 from agent.feedback_agent import process_meeting_feedback, MeetingInput, AgendaItem as FeedbackAgendaItem
+from agent.feedback_repository import post_feedback
 
 FIRESTORE_MEETING_COLLECTION = Config.FIRESTORE_MEETING_COLLECTION
+
 
 def generate_feedback(meeting_id: str) -> Optional[Dict]:
     """
@@ -37,12 +38,10 @@ def generate_feedback(meeting_id: str) -> Optional[Dict]:
     end_at = f"{date} {end_time}:00"
     
     # アジェンダの変換（存在する場合）
-    agenda = None
-    if meeting_data.get("agenda"):
-        agenda = [
+    agenda = [
             FeedbackAgendaItem(topic=item["topic"], duration=item["duration"])
             for item in meeting_data["agenda"]
-        ]
+    ]
 
     try:
         # MeetingInputを構築
@@ -63,27 +62,13 @@ def generate_feedback(meeting_id: str) -> Optional[Dict]:
     
     # AIのフィードバックを発言履歴用DBに保存する
     post_message(meeting_id, Config.get_ai_facilitator_name(), feedback.message, meta={"role": "ai", "type": "feedback"})
-    detail = feedback.detail
-    
-    # 要約の保存
-    if detail.summary is not None:
-        message = "要約です。\n" + detail.summary
-        post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai", "type": "summary"})
-    
-    # 評価の保存
-    if detail.evaluation is not None:
-        message = "評価です。\n" + json.dumps({
-            "engagement": detail.evaluation.engagement,
-            "concreteness": detail.evaluation.concreteness,
-            "direction": detail.evaluation.direction
-        }, ensure_ascii=False)
-        post_message(meeting_id, Config.get_ai_facilitator_name(), message, meta={"role": "ai", "type": "evaluation"})
+    # 補足情報をDBに保存 
+    post_feedback(meeting_id, feedback.message, feedback.detail.model_dump())
     
     return {
         "message": feedback.message,
         "detail": {
-            "summary": detail.summary,
-            "evaluation": detail.evaluation.model_dump() if detail.evaluation else None,
-            "agenda": [{"topic": item.topic, "duration": item.duration} for item in detail.agenda] if detail.agenda else None
+            "summary": feedback.detail.summary,
+            "evaluation": feedback.detail.evaluation.model_dump()
         }
     }

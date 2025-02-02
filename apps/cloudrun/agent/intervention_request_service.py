@@ -6,10 +6,10 @@ from message.message import get_message_history
 from models import InterventionStatus, InterventionRequest, MeetingInput
 from .intervention_check_agent import should_intervene
 import os
-from message.message import post_message
 FIRESTORE_MEETING_COLLECTION = Config.FIRESTORE_MEETING_COLLECTION
 
 AGENT_INTERVENTION_SPAN_SECONDS = int(os.getenv("AGENT_INTERVENTION_SPAN_SECONDS", 10))
+
 
 def _create_intervention_request(meeting_id: str, reason: str) -> bool:
     """介入リクエストを作成する"""
@@ -29,10 +29,6 @@ def _create_intervention_request(meeting_id: str, reason: str) -> bool:
     doc_ref.update({
         "intervention_request": intervention_request
     })
-
-    # frontでのsubscribe用
-    post_message(meeting_id, Config.get_ai_facilitator_name(), "介入リクエストを作成しました。", meta={"role": "ai", "type": "intervention_request"})
-    return True
 
 def _get_intervention_request(meeting_id: str) -> Optional[dict]:
     """介入リクエストを取得する"""
