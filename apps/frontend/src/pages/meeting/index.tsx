@@ -175,6 +175,33 @@ const MeetingPage = () => {
     return map
   }, [userRtmList, userInfo])
 
+    // listen events
+    useEffect(() => {
+      window.rtmManager.on("userListChanged", onRtmUserListChanged)
+      window.rtmManager.on("languagesChanged", onLanguagesChanged)
+      window.rtmManager.on("sttDataChanged", onSttDataChanged)
+      window.rtcManager.on("localUserChanged", onLocalUserChanged)
+      window.rtcManager.on("remoteUserChanged", onRemoteUserChanged)
+      window.rtcManager.on("textstreamReceived", onTextStreamReceived)
+  
+      return () => {
+        window.rtmManager.off("userListChanged", onRtmUserListChanged)
+        window.rtmManager.off("languagesChanged", onLanguagesChanged)
+        window.rtmManager.off("sttDataChanged", onSttDataChanged)
+        window.rtcManager.off("localUserChanged", onLocalUserChanged)
+        window.rtcManager.off("remoteUserChanged", onRemoteUserChanged)
+        window.rtcManager.off("textstreamReceived", onTextStreamReceived)
+      }
+    }, [simpleUserMap])
+  
+    useEffect(() => {
+      localTracks?.videoTrack?.setMuted(localVideoMute)
+    }, [localTracks?.videoTrack, localVideoMute])
+  
+    useEffect(() => {
+      localTracks?.audioTrack?.setMuted(localAudioMute)
+    }, [localTracks?.audioTrack, localAudioMute])
+
   const userDataList = useMemo(() => {
     const list: IUserData[] = []
 
@@ -218,6 +245,45 @@ const MeetingPage = () => {
   const destory = async () => {
     await Promise.all([rtcManager.destroy(), sttManager.destroy()]);
     dispatch(reset());
+  }
+
+  const onLocalUserChanged = (tracks: IUserTracks) => {
+    setLocalTracks(tracks)
+    if (tracks.videoTrack) {
+      dispatch(setLocalVideoMute(false))
+    }
+    if (tracks.audioTrack) {
+      dispatch(setLocalAudioMute(false))
+    }
+  }
+
+  const onRtmUserListChanged = (list: ISimpleUserInfo[]) => {
+    console.log("[test] onRtmUserListChanged", list)
+    setRtmUserList(list)
+  }
+
+  const onRemoteUserChanged = (user: IRtcUser) => {
+    setRtcUserMap((prev) => {
+      const newMap = new Map(prev)
+      newMap.set(Number(user.userId), user)
+      return newMap
+    })
+  }
+
+  const onSttDataChanged = (data: ISttData) => {
+    console.log("[test] onSttDataChanged", data)
+    dispatch(setSttData(data))
+  }
+
+  const onTextStreamReceived = (textstream: ITextstream) => {
+    // modify subtitle list
+    const targetUser = simpleUserMap.get(Number(textstream.uid))
+    dispatch(updateSubtitles({ textstream, username: targetUser?.userName || "" }))
+  }
+
+  const onLanguagesChanged = (languages: ILanguageSelect) => {
+    console.log("[test] onLanguagesChanged", languages)
+    dispatch(setLanguageSelect(languages))
   }
 
   const onClickUserListItem = (data: IUserData) => {
