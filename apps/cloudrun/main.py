@@ -1,12 +1,5 @@
 from flask import Flask, request, jsonify
 from typing import Dict
-import vertexai
-from vertexai.preview.generative_models import (
-    FunctionDeclaration,
-    GenerativeModel,
-    Tool,
-    ToolConfig,
-)
 
 from agent.meeting_feedback_graph import (
     process_meeting_feedback,
@@ -36,66 +29,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route("/")
 def hello_world():
-
-    # Initialize Vertex AI
-    vertexai.init(project=Config.PROJECT_ID, location="us-central1")
-
-    # Specify a function declaration and parameters for an API request
-    get_product_sku_func = FunctionDeclaration(
-        name="get_product_sku",
-        description="Get the available inventory for a Google products, e.g: Pixel phones, Pixel Watches, Google Home etc",
-        # Function parameters are specified in JSON schema format
-        parameters={
-            "type": "object",
-            "properties": {
-                "product_name": {"type": "string", "description": "Product name"}
-            },
-        },
-    )
-
-    # Specify another function declaration and parameters for an API request
-    get_store_location_func = FunctionDeclaration(
-        name="get_store_location",
-        description="Get the location of the closest store",
-        # Function parameters are specified in JSON schema format
-        parameters={
-            "type": "object",
-            "properties": {"location": {"type": "string", "description": "Location"}},
-        },
-    )
-
-    # Define a tool that includes the above functions
-    retail_tool = Tool(
-        function_declarations=[
-            get_product_sku_func,
-            get_store_location_func,
-        ],
-    )
-
-    # Define a tool config for the above functions
-    retail_tool_config = ToolConfig(
-        function_calling_config=ToolConfig.FunctionCallingConfig(
-            # ANY mode forces the model to predict a function call
-            mode=ToolConfig.FunctionCallingConfig.Mode.ANY,
-            # List of functions that can be returned when the mode is ANY.
-            # If the list is empty, any declared function can be returned.
-            allowed_function_names=["get_product_sku"],
-        )
-    )
-
-    model = GenerativeModel(
-        model_name="gemini-1.5-flash-002",
-        tools=[retail_tool],
-        tool_config=retail_tool_config,
-    )
-    response = model.generate_content(
-        "Do you have the Pixel 8 Pro 128GB in stock?",
-    )
-
-    print(response.candidates[0].function_calls)
-
-    return jsonify({"data": str(response.candidates[0].function_calls)}), 200
-    # return "Hello Cloud Run!"
+    return "Hello Cloud Run!"
 
 
 @app.route("/meeting", methods=["POST"])
