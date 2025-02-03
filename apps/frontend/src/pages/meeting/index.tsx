@@ -36,6 +36,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import axios from "axios"
 import { CLOUD_RUN_ENDPOINT } from "@/config"
+import { db } from "@/firebase"
+import { collection, onSnapshot, orderBy, query, doc } from "firebase/firestore"
+import { Button, notification, Space } from "antd"
+import { AiIcon } from "@/components/icons"
+
+// speech recognition
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition"
 
 import styles from "./index.module.scss"
@@ -56,7 +62,6 @@ const MeetingPage = () => {
   const dispatch = useDispatch()
   const nav = useNavigate()
   const isMounted = useMount()
-  const { contextHolder } = useMessage()
   const localAudioMute = useSelector((state: RootState) => state.global.localAudioMute)
   const localVideoMute = useSelector((state: RootState) => state.global.localVideoMute)
   const userInfo = useSelector((state: RootState) => state.global.userInfo)
@@ -73,6 +78,9 @@ const MeetingPage = () => {
   const [userRtmList, setRtmUserList] = useState<ISimpleUserInfo[]>([])
   const [rtcUserMap, setRtcUserMap] = useState<Map<number | string, IRtcUser>>(new Map())
   const [centerUserId, setCenterUserId] = useState(userInfo.userId)
+
+  // notification
+  const [api, contextHolder] = notification.useNotification();
 
   const { transcript, listening, browserSupportsSpeechRecognition } = useSpeechRecognition()
 
@@ -100,6 +108,61 @@ const MeetingPage = () => {
       stopVoiceRecognition();
     }
   }, [])
+
+  const openNotification = () => {
+    console.log("openNotification")
+    const key = `open${Date.now()}`;
+    const btn = (
+      <Space>
+        <Button type="link" size="small" onClick={() => {handleGetAIOpinion();api.destroy()}}>
+          Get AI's Opinion
+        </Button>
+      </Space>
+    );
+    api.open({
+      message: "AIエージェントから意見があります",
+      description: "発言を許可する場合は「Get AI's Opinion」ボタンをクリックしてください。",
+      placement: "bottom",
+      duration: 0,
+      icon: <AiIcon></AiIcon>,
+      btn,
+      key,
+    });
+  };
+
+  const handleGetAIOpinion = async () => {
+    try {
+      const response = await axios.get(`${CLOUD_RUN_ENDPOINT}/meeting/${channel}/intervention`)
+      console.log(response.data)
+    } catch (error) {
+      console.error("Error:", error)
+    }
+  }
+
+  useEffect(() => {
+    if (!channel) return
+
+    const docRef = doc(db, "meetings", channel);
+    const unsubscribe = onSnapshot(docRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        console.log("ドキュメントが更新されました:", data);
+
+        // intervention_request.statusが"pending"の場合の処理
+        if (data.intervention_request?.status === "pending") {
+          console.log("介入リクエストがペンディング状態になりました。");
+        }
+        else {
+        }
+      } else {
+        console.log("ドキュメントが存在しません");
+      }
+    }, (error) => {
+      console.error("サブスクライブ中にエラーが発生しました:", error);
+    });
+
+    return () => unsubscribe()
+  }, [channel])
 
   // useSpeechRecognition による listening の変化に合わせ、録音開始／停止する
   useEffect(() => {
