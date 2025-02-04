@@ -7,7 +7,6 @@ const DialogueRecord = () => {
   return (
     <div className={styles.dialogRecord}>
       <RecordContent></RecordContent>
-      <RecordFooter></RecordFooter>
     </div>
   )
 }
