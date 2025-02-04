@@ -69,7 +69,7 @@ def get_meeting_feedback(meeting_id: str) -> Dict:
     feedback = generate_feedback(meeting_id)
     if feedback is None:
         return jsonify({"error": "Meeting not found or invalid data format"}), 404
-    
+
     return jsonify({"data": feedback}), 200
 
 
@@ -83,20 +83,19 @@ def message():
     post_message(meeting_id, speaker, message)
 
     update_minutes(meeting_id)
-     # TODO これ自体を別のendpointに分離したい気分ではある
+    # TODO これ自体を別のendpointに分離したい気分ではある
     request_intervention(meeting_id)
 
     return jsonify({"data": "OK"}), 201
 
 
-@app.route('/meeting/<meeting_id>/intervention', methods=["GET"])
+@app.route("/meeting/<meeting_id>/intervention", methods=["GET"])
 def allow_intervention(meeting_id: str):
     """介入許可を受け取り、介入メッセージを生成する"""
     # 介入メッセージを生成して保存
     intervention_message = generate_intervention_message(meeting_id)
     return jsonify({"data": {"message": intervention_message}}), 200
-    
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
 
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)
