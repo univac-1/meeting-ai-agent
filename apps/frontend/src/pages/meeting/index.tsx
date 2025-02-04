@@ -1,8 +1,11 @@
+// speech recognition
 import "core-js/stable"
 import "regenerator-runtime/runtime"
+import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition"
 
 import { useMount, useMessage } from "@/common"
-import { IUserInfo, IUserData, ILanguageSelect, ISttData } from "@/types"
+import { IUserInfo, IUserData, ILanguageSelect, ISttData, ICommentItem } from "@/types"
+
 import {
   RtcManager,
   RtmManager,
@@ -30,19 +33,23 @@ import {
   setSttData,
   setSubtitles,
   setRecordLanguageSelect,
+  setChatHistory,
 } from "@/store/reducers/global"
 import { useSelector, useDispatch } from "react-redux"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import axios from "axios"
+
+// firebase
 import { CLOUD_RUN_ENDPOINT } from "@/config"
 import { db } from "@/firebase"
 import { collection, onSnapshot, orderBy, query, doc } from "firebase/firestore"
-import { Button, notification, Space } from "antd"
-import { AiIcon } from "@/components/icons"
 
-// speech recognition
-import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition"
+// antd 
+import { Button, notification, Space } from "antd"
+
+// icon
+import { AiIcon } from "@/components/icons"
 
 import styles from "./index.module.scss"
 
@@ -82,6 +89,10 @@ const MeetingPage = () => {
   // notification
   const [api, contextHolder] = notification.useNotification();
 
+  const meetingId = useSelector((state: RootState) => state.global.meetingId)
+  const initialLoadRef = useRef(true);
+
+
   const { transcript, listening, browserSupportsSpeechRecognition } = useSpeechRecognition()
 
   const [status, setStatus] = useState<StatusType>("init");
@@ -109,6 +120,7 @@ const MeetingPage = () => {
     }
   }, [])
 
+  // 通知を表示する
   const openNotification = () => {
     console.log("openNotification")
     const key = `open${Date.now()}`;
@@ -151,6 +163,7 @@ const MeetingPage = () => {
         // intervention_request.statusが"pending"の場合の処理
         if (data.intervention_request?.status === "pending") {
           console.log("介入リクエストがペンディング状態になりました。");
+          openNotification();
         }
         else {
         }
@@ -163,6 +176,129 @@ const MeetingPage = () => {
 
     return () => unsubscribe()
   }, [channel])
+
+  // 音声合成などのための補助関数
+  const base64ToBlob = (base64Data: string, contentType: string): Blob => {
+    const byteCharacters = atob(base64Data);
+    const byteArrays: Uint8Array[] = [];
+    for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+      const slice = byteCharacters.slice(offset, offset + 512);
+      const byteNumbers: number[] = new Array(slice.length);
+      for (let i = 0; i < slice.length; i++) {
+        byteNumbers[i] = slice.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      byteArrays.push(byteArray);
+    }
+    return new Blob(byteArrays, { type: contentType });
+  };
+
+  const handleTextToSpeech = async (text: string): Promise<void> => {
+    try {
+      const response = await fetch(
+        `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            input: { text },
+            voice: {
+              languageCode: "ja-JP",
+              ssmlGender: "NEUTRAL",
+            },
+            audioConfig: {
+              audioEncoding: "MP3",
+              speakingRate: "1.5",
+              volumeGainDb: "-90.0",
+            },
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (data.audioContent) {
+        const audioBlob = base64ToBlob(data.audioContent, "audio/mp3");
+        const url = URL.createObjectURL(audioBlob);
+        const audio = new Audio(url);
+        await audio.play();
+      }
+    } catch (error) {
+      console.error("音声合成に失敗した:", error);
+    }
+  };
+
+  // AIコメント処理関数群
+  const handleEvaluation = (aiComment: ICommentItem) => {
+    console.log("評価コメントを処理します:", aiComment.message);
+    // 評価に関する追加処理があればここに記述
+  };
+
+  const handleSummary = (aiComment: ICommentItem) => {
+    console.log("要約コメントを処理します:", aiComment.message);
+    // 要約に関する追加処理があればここに記述
+  };
+
+  const handleFeedback = (aiComment: ICommentItem) => {
+    console.log("フィードバックコメントを処理します:", aiComment.message);
+    // 音声読み上げ処理を実行する
+    handleTextToSpeech(aiComment.message);
+  };
+
+  const handleAIComment = (aiComment: ICommentItem) => {
+    if (!aiComment.meta || !aiComment.meta.type) {
+      console.warn("AIコメントのタイプが不明です:", aiComment);
+      return;
+    }
+    switch (aiComment.meta.type) {
+      case "evaluation":
+        handleEvaluation(aiComment);
+        break;
+      case "summary":
+        handleSummary(aiComment);
+        break;
+      case "feedback":
+        handleFeedback(aiComment);
+        break;
+      default:
+        console.warn("未対応のAIコメントタイプです:", aiComment.meta.type);
+    }
+  };
+
+  // メッセージ履歴の取得およびAIコメントの検出処理
+  useEffect(() => {
+    if (!meetingId) return;
+    const commentsRef = collection(db, "meetings", meetingId, "comments");
+    const q = query(commentsRef, orderBy("speak_at"));
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      // 全ドキュメントからメッセージ履歴を構築
+      const messageHistory: ICommentItem[] = querySnapshot.docs.map((doc) => {
+        const data = doc.data() as ICommentItem;
+        data.speaker = data.speaker.toString();
+        return data;
+      });
+
+      // 追加されたドキュメントに対してのみ処理
+      querySnapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          const data = change.doc.data() as ICommentItem;
+          data.speaker = data.speaker.toString();
+          if (!initialLoadRef.current && data?.meta && data?.meta?.role === "ai") {
+            handleAIComment(data);
+          }
+        }
+      });
+
+      if (initialLoadRef.current) {
+        initialLoadRef.current = false;
+      }
+      dispatch(setChatHistory(messageHistory));
+    });
+
+    return () => unsubscribe();
+  }, [meetingId]);
 
   // useSpeechRecognition による listening の変化に合わせ、録音開始／停止する
   useEffect(() => {
