@@ -82,7 +82,7 @@ def message():
 
     post_message(meeting_id, speaker, message)
 
-    update_minutes(meeting_id, message)
+    update_minutes(meeting_id)
      # TODO これ自体を別のendpointに分離したい気分ではある
     request_intervention(meeting_id)
 
