@@ -45,7 +45,7 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
                     "type": "boolean",
                     "description": "Whether a new decision should be added to the minutes.",
                 },
-                "decision_text": {
+                "add_decision_text": {
                     "type": "string",
                     "description": "Text content of the decision to be added.",
                 },
@@ -73,15 +73,15 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
                     "type": "boolean",
                     "description": "Whether a new action plan should be added.",
                 },
-                "action_plan_text": {
+                "add_action_plan_text": {
                     "type": "string",
                     "description": "Text of the action plan to be added.",
                 },
-                "assigned_to": {
+                "add_assigned_to": {
                     "type": "string",
                     "description": "Person responsible for the action plan (leave empty if unknown)",
                 },
-                "due_date": {
+                "add_due_date": {
                     "type": "string",
                     "description": "If the due date is uncertain, leave it empty. Do NOT guess an approximate date. Use YYYY-MM-DD format only for confirmed deadlines.",
                 },
@@ -188,31 +188,45 @@ def update_minutes(meeting_id: str):
 
     # --- 決定事項の追加 ---
     if decision_action.get("add_decision"):
-        new_decision = {
-            "id": f"decision_{uuid4().hex}",
-            "text": decision_action["decision_text"],
-        }
-        print("新しい決定事項を追加します:", new_decision)
-        doc_ref.update({MinutesFields.DECISIONS: firestore.ArrayUnion([new_decision])})
+        add_decision_text = decision_action.get("add_decision_text")
+        if add_decision_text:
+            existing_decisions = existing_minutes.get(MinutesFields.DECISIONS, [])
+
+            if any(d["text"] == add_decision_text for d in existing_decisions):
+                print(
+                    "同じ決定事項が既に存在するため追加をスキップします:",
+                    add_decision_text,
+                )
+            else:
+                new_decision = {
+                    "id": f"decision_{uuid4().hex}",
+                    "text": add_decision_text,
+                }
+                print("新しい決定事項を追加します:", new_decision)
+                doc_ref.update(
+                    {MinutesFields.DECISIONS: firestore.ArrayUnion([new_decision])}
+                )
 
     # --- 決定事項の更新 ---
     if decision_action.get("update_decision"):
         decisions = existing_minutes.get(MinutesFields.DECISIONS, [])
         target_id = decision_action["decision_id"]
-        print("決定事項の更新を開始します。対象ID:", target_id)
-        found = False
-        for decision in decisions:
-            if decision["id"] == target_id:
-                old_text = decision["text"]
-                decision["text"] = decision_action["new_decision_text"]
-                print(
-                    f"決定事項(ID: {target_id})のテキストを更新しました。旧テキスト: '{old_text}' → 新テキスト: '{decision['text']}'"
-                )
-                found = True
-                break
-        if not found:
-            print(f"更新対象の決定事項(ID: {target_id})が見つかりませんでした。")
-        doc_ref.update({MinutesFields.DECISIONS: decisions})
+        new_decision_text = decision_action.get("new_decision_text")
+        if new_decision_text:
+            print("決定事項の更新を開始します。対象ID:", target_id)
+            found = False
+            for decision in decisions:
+                if decision["id"] == target_id:
+                    old_text = decision["text"]
+                    decision["text"] = decision_action["new_decision_text"]
+                    print(
+                        f"決定事項(ID: {target_id})のテキストを更新しました。旧テキスト: '{old_text}' → 新テキスト: '{decision['text']}'"
+                    )
+                    found = True
+                    break
+            if not found:
+                print(f"更新対象の決定事項(ID: {target_id})が見つかりませんでした。")
+            doc_ref.update({MinutesFields.DECISIONS: decisions})
 
     # --- 決定事項の削除 ---
     if decision_action.get("delete_decision"):
@@ -230,45 +244,59 @@ def update_minutes(meeting_id: str):
 
     # --- アクションプランの追加 ---
     if decision_action.get("add_action_plan"):
-        new_action = {
-            "id": f"action_{uuid4().hex}",
-            "task": decision_action["action_plan_text"],
-            "assigned_to": decision_action["assigned_to"],
-            "due_date": decision_action["due_date"],
-        }
-        print("新しいアクションプランを追加します:", new_action)
-        doc_ref.update({MinutesFields.ACTION_PLAN: firestore.ArrayUnion([new_action])})
+        new_action_text = decision_action.get("add_action_plan_text")
+        if new_action_text:
+            existing_actions = existing_minutes.get(MinutesFields.ACTION_PLAN, [])
+
+            if any(a["task"] == new_action_text for a in existing_actions):
+                print(
+                    "同じアクションプランが既に存在するため追加をスキップします:",
+                    new_action_text,
+                )
+            else:
+                new_action = {
+                    "id": f"action_{uuid4().hex}",
+                    "task": new_action_text,
+                    "assigned_to": decision_action.get("add_assigned_to", "未設定"),
+                    "due_date": decision_action.get("add_due_date", "未設定"),
+                }
+                print("新しいアクションプランを追加します:", new_action)
+                doc_ref.update(
+                    {MinutesFields.ACTION_PLAN: firestore.ArrayUnion([new_action])}
+                )
 
     # --- アクションプランの更新 ---
     if decision_action.get("update_action_plan"):
         actions = existing_minutes.get(MinutesFields.ACTION_PLAN, [])
         target_action_id = decision_action["action_id"]
-        print("アクションプランの更新を開始します。対象ID:", target_action_id)
-        found = False
-        for action in actions:
-            if action["id"] == target_action_id:
-                old_action = action.copy()  # 旧値を記録
-                action.update(
-                    {
-                        "task": decision_action["new_action_text"],
-                        "assigned_to": decision_action.get(
-                            "new_assigned_to", action["assigned_to"]
-                        ),
-                        "due_date": decision_action.get(
-                            "new_due_date", action["due_date"]
-                        ),
-                    }
-                )
+        new_action_text = decision_action.get("new_action_text")
+        if new_action_text:
+            print("アクションプランの更新を開始します。対象ID:", target_action_id)
+            found = False
+            for action in actions:
+                if action["id"] == target_action_id:
+                    old_action = action.copy()  # 旧値を記録
+                    action.update(
+                        {
+                            "task": decision_action["new_action_text"],
+                            "assigned_to": decision_action.get(
+                                "new_assigned_to", action["assigned_to"]
+                            ),
+                            "due_date": decision_action.get(
+                                "new_due_date", action["due_date"]
+                            ),
+                        }
+                    )
+                    print(
+                        f"アクションプラン(ID: {target_action_id})を更新しました。旧値: {old_action} → 新値: {action}"
+                    )
+                    found = True
+                    break
+            if not found:
                 print(
-                    f"アクションプラン(ID: {target_action_id})を更新しました。旧値: {old_action} → 新値: {action}"
+                    f"更新対象のアクションプラン(ID: {target_action_id})が見つかりませんでした。"
                 )
-                found = True
-                break
-        if not found:
-            print(
-                f"更新対象のアクションプラン(ID: {target_action_id})が見つかりませんでした。"
-            )
-        doc_ref.update({MinutesFields.ACTION_PLAN: actions})
+            doc_ref.update({MinutesFields.ACTION_PLAN: actions})
 
     # --- アクションプランの削除 ---
     if decision_action.get("delete_action_plan"):
