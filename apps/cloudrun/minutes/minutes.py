@@ -1,6 +1,8 @@
+from typing import List
 from message.message import get_message_history
 from config import Config
-from minutes.constants import MinutesFields, ActionPlanFields
+from minutes.constants import MinutesFields
+from meeting.meeting import AgendaItem
 import vertexai
 from vertexai.preview.generative_models import (
     FunctionDeclaration,
@@ -311,3 +313,24 @@ def update_minutes(meeting_id: str):
         else:
             print(f"アクションプラン(ID: {action_id_to_delete})を削除しました。")
         doc_ref.update({MinutesFields.ACTION_PLAN: actions})
+
+
+def set_agenda_in_minutes(meeting_id: str, agenda: List[AgendaItem]):
+    """アジェンダを議事録DBに書き込む"""
+
+    doc_ref = (
+        db_client.collection(Config.FIRESTORE_MEETING_COLLECTION)
+        .document(meeting_id)
+        .collection(Config.FIRESTORE_MINUTES_COLLECTION)
+        .document(Config.FIRESTORE_ALL_MINUTES_DOCUMENT)
+    )
+
+    doc_ref.set(
+        {
+            MinutesFields.AGENDA: [
+                {"id": ind + 1, **ele} for ind, ele in enumerate(agenda)
+            ],
+            MinutesFields.DECISIONS: [],
+            MinutesFields.ACTION_PLAN: [],
+        }
+    )
