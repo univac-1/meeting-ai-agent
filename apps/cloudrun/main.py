@@ -10,7 +10,7 @@ from agent.intervention_service import generate_intervention_message
 from agent.intervention_request_service import request_intervention
 from agent.feedback_service import generate_feedback
 import json
-from minutes.minutes import update_minutes
+from minutes.minutes import set_agenda_in_minutes, update_minutes
 
 
 app = Flask(__name__)
@@ -51,6 +51,9 @@ def meeting():
         end_time,
         meeting_purpose,
     )
+
+    # 議事録にアジェンダを設定する
+    set_agenda_in_minutes(meeting_id, meeting_agenda)
 
     return jsonify({"data": {"meeting_id": meeting_id}}), 201
 
