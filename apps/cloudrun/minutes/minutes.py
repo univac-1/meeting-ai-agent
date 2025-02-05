@@ -195,16 +195,13 @@ def update_minutes(meeting_id: str):
             existing_decisions = existing_minutes.get(MinutesFields.DECISIONS, [])
 
             if any(d["text"] == add_decision_text for d in existing_decisions):
-                print(
-                    "同じ決定事項が既に存在するため追加をスキップします:",
-                    add_decision_text,
-                )
+                print(f"⚠️ [スキップ] 同じ決定事項が既に存在: {add_decision_text}")
             else:
                 new_decision = {
                     "id": f"decision_{uuid4().hex}",
                     "text": add_decision_text,
                 }
-                print("新しい決定事項を追加します:", new_decision)
+                print(f"✅ [追加] 新しい決定事項: {new_decision}")
                 doc_ref.update(
                     {MinutesFields.DECISIONS: firestore.ArrayUnion([new_decision])}
                 )
@@ -215,33 +212,35 @@ def update_minutes(meeting_id: str):
         target_id = decision_action["decision_id"]
         new_decision_text = decision_action.get("new_decision_text")
         if new_decision_text:
-            print("決定事項の更新を開始します。対象ID:", target_id)
+            print(f"🛠 [更新開始] 決定事項 ID: {target_id}")
             found = False
             for decision in decisions:
                 if decision["id"] == target_id:
                     old_text = decision["text"]
-                    decision["text"] = decision_action["new_decision_text"]
+                    decision["text"] = new_decision_text
                     print(
-                        f"決定事項(ID: {target_id})のテキストを更新しました。旧テキスト: '{old_text}' → 新テキスト: '{decision['text']}'"
+                        f"🔄 [更新完了] ID: {target_id} | 旧: '{old_text}' → 新: '{decision['text']}'"
                     )
                     found = True
                     break
             if not found:
-                print(f"更新対象の決定事項(ID: {target_id})が見つかりませんでした。")
+                print(
+                    f"❌ [エラー] 更新対象の決定事項 (ID: {target_id}) が見つかりません"
+                )
             doc_ref.update({MinutesFields.DECISIONS: decisions})
 
     # --- 決定事項の削除 ---
     if decision_action.get("delete_decision"):
         decision_id_to_delete = decision_action["decision_id_to_delete"]
         decisions_before = existing_minutes.get(MinutesFields.DECISIONS, [])
-        print("決定事項の削除を試みます。対象ID:", decision_id_to_delete)
+        print(f"🗑 [削除試行] 決定事項 ID: {decision_id_to_delete}")
         decisions = [d for d in decisions_before if d["id"] != decision_id_to_delete]
         if len(decisions_before) == len(decisions):
             print(
-                f"削除対象の決定事項(ID: {decision_id_to_delete})が見つかりませんでした。"
+                f"❌ [エラー] 削除対象の決定事項 (ID: {decision_id_to_delete}) が見つかりません"
             )
         else:
-            print(f"決定事項(ID: {decision_id_to_delete})を削除しました。")
+            print(f"✅ [削除完了] 決定事項 ID: {decision_id_to_delete}")
         doc_ref.update({MinutesFields.DECISIONS: decisions})
 
     # --- アクションプランの追加 ---
@@ -251,10 +250,7 @@ def update_minutes(meeting_id: str):
             existing_actions = existing_minutes.get(MinutesFields.ACTION_PLAN, [])
 
             if any(a["task"] == new_action_text for a in existing_actions):
-                print(
-                    "同じアクションプランが既に存在するため追加をスキップします:",
-                    new_action_text,
-                )
+                print(f"⚠️ [スキップ] 同じアクションプランが既に存在: {new_action_text}")
             else:
                 new_action = {
                     "id": f"action_{uuid4().hex}",
@@ -262,7 +258,7 @@ def update_minutes(meeting_id: str):
                     "assigned_to": decision_action.get("add_assigned_to", "未設定"),
                     "due_date": decision_action.get("add_due_date", "未設定"),
                 }
-                print("新しいアクションプランを追加します:", new_action)
+                print(f"✅ [追加] 新しいアクションプラン: {new_action}")
                 doc_ref.update(
                     {MinutesFields.ACTION_PLAN: firestore.ArrayUnion([new_action])}
                 )
@@ -273,7 +269,7 @@ def update_minutes(meeting_id: str):
         target_action_id = decision_action["action_id"]
         new_action_text = decision_action.get("new_action_text")
         if new_action_text:
-            print("アクションプランの更新を開始します。対象ID:", target_action_id)
+            print(f"🛠 [更新開始] アクションプラン ID: {target_action_id}")
             found = False
             for action in actions:
                 if action["id"] == target_action_id:
@@ -290,13 +286,13 @@ def update_minutes(meeting_id: str):
                         }
                     )
                     print(
-                        f"アクションプラン(ID: {target_action_id})を更新しました。旧値: {old_action} → 新値: {action}"
+                        f"🔄 [更新完了] ID: {target_action_id} | 旧: {old_action} → 新: {action}"
                     )
                     found = True
                     break
             if not found:
                 print(
-                    f"更新対象のアクションプラン(ID: {target_action_id})が見つかりませんでした。"
+                    f"❌ [エラー] 更新対象のアクションプラン (ID: {target_action_id}) が見つかりません"
                 )
             doc_ref.update({MinutesFields.ACTION_PLAN: actions})
 
@@ -304,14 +300,14 @@ def update_minutes(meeting_id: str):
     if decision_action.get("delete_action_plan"):
         action_id_to_delete = decision_action["action_id_to_delete"]
         actions_before = existing_minutes.get(MinutesFields.ACTION_PLAN, [])
-        print("アクションプランの削除を試みます。対象ID:", action_id_to_delete)
+        print(f"🗑 [削除試行] アクションプラン ID: {action_id_to_delete}")
         actions = [a for a in actions_before if a["id"] != action_id_to_delete]
         if len(actions_before) == len(actions):
             print(
-                f"削除対象のアクションプラン(ID: {action_id_to_delete})が見つかりませんでした。"
+                f"❌ [エラー] 削除対象のアクションプラン (ID: {action_id_to_delete}) が見つかりません"
             )
         else:
-            print(f"アクションプラン(ID: {action_id_to_delete})を削除しました。")
+            print(f"✅ [削除完了] アクションプラン ID: {action_id_to_delete}")
         doc_ref.update({MinutesFields.ACTION_PLAN: actions})
 
 
