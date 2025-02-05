@@ -328,7 +328,7 @@ def set_agenda_in_minutes(meeting_id: str, agenda: List[AgendaItem]):
     doc_ref.set(
         {
             MinutesFields.AGENDA: [
-                {"id": ind, **ele} for ind, ele in enumerate(agenda)
+                {"id": ind + 1, **ele} for ind, ele in enumerate(agenda)
             ],
             MinutesFields.DECISIONS: [],
             MinutesFields.ACTION_PLAN: [],
