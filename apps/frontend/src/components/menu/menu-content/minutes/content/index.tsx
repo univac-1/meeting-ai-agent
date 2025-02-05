@@ -9,6 +9,7 @@ interface AgendaItem {
   id: string
   topic: string
   duration: number
+  completed: boolean
 }
 
 interface DecisionItem {
@@ -83,7 +84,9 @@ const Content = () => {
         <h3>アジェンダ</h3>
         <ul>
           {agenda.map((item, index) => (
-            <li key={item.id}>{`${index + 1}. ${item.topic}`}</li>
+            <li key={item.id} className={item.completed ? styles.completed : ""}>
+              {item.completed ? "✅ " : "🔲 "} {`${item.topic}`}
+            </li>
           ))}
         </ul>
       </div>
