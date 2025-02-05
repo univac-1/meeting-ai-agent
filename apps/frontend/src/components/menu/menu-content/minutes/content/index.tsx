@@ -7,7 +7,8 @@ import styles from "./index.module.scss"
 
 interface AgendaItem {
   id: string
-  text: string
+  topic: string
+  duration: number
 }
 
 interface DecisionItem {
@@ -81,8 +82,8 @@ const Content = () => {
       <div className={styles.section}>
         <h3>アジェンダ</h3>
         <ul>
-          {agenda.map((item) => (
-            <li key={item.id}>{item.text}</li>
+          {agenda.map((item, index) => (
+            <li key={item.id}>{`${index + 1}. ${item.topic}`}</li>
           ))}
         </ul>
       </div>
