@@ -28,6 +28,7 @@ def get_existing_minutes(meeting_id: str) -> dict:
         doc.to_dict()
         if doc.exists
         else {
+            MinutesFields.AGENDA: [],
             MinutesFields.DECISIONS: [],
             MinutesFields.ACTION_PLAN: [],
         }
@@ -39,7 +40,10 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
 
     determine_update_func = FunctionDeclaration(
         name="determine_update_requirements",
-        description="Determine whether to add, update, or delete meeting minutes items based on past discussions and existing records.",
+        description=(
+            "Determine whether to add, update, or delete meeting minutes items based on the latest statement. "
+            "Consider past discussions and existing records to ensure consistency."
+        ),
         parameters={
             "type": "object",
             "properties": {
@@ -130,26 +134,53 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
         ),
     )
 
-    formatted_history = "\n".join(
-        [
-            f"{msg['speak_at']} - {msg['speaker']}: {msg['message']}"
-            for msg in message_history
-        ]
+    latest_message = message_history[-1]  # 最新の発言
+    past_messages = message_history[:-1]  # それ以前の履歴
+
+    # 過去の会話履歴のフォーマット
+    formatted_history = (
+        "\n".join(
+            [
+                f"{msg.get('speak_at', '不明な時間')} - {msg.get('speaker', '不明な発言者')}: {msg.get('message', '発言なし')}"
+                for msg in past_messages
+            ]
+        )
+        or "なし"
     )
-    existing_decisions = "\n".join(
-        [
-            f"- {d['text']} (ID: {d['id']})"
-            for d in existing_minutes.get(MinutesFields.DECISIONS, [])
-        ]
+
+    # 最新の発言のフォーマット
+    latest_message_text = (
+        f"{latest_message.get('speak_at', '不明な時間')} - {latest_message.get('speaker', '不明な発言者')}: {latest_message.get('message', '発言なし')}"
+        if latest_message
+        else "なし"
     )
-    existing_actions = "\n".join(
-        [
-            f"- {a['task']} (ID: {a['id']}, 担当: {a['assigned_to']}, 期限: {a['due_date']})"
-            for a in existing_minutes.get(MinutesFields.ACTION_PLAN, [])
-        ]
+
+    # 既存の決定事項のフォーマット
+    existing_decisions = (
+        "\n".join(
+            [
+                f"- {d.get('text', '不明な決定')} (ID: {d.get('id', '不明')})"
+                for d in existing_minutes.get(MinutesFields.DECISIONS, [])
+            ]
+        )
+        or "なし"
+    )
+
+    # 既存のアクションプランのフォーマット
+    existing_actions = (
+        "\n".join(
+            [
+                f"- {a.get('task', '不明なアクション')} (ID: {a.get('id', '不明')}, 担当: {a.get('assigned_to', '未設定')}, 期限: {a.get('due_date', '未設定')})"
+                for a in existing_minutes.get(MinutesFields.ACTION_PLAN, [])
+            ]
+        )
+        or "なし"
     )
 
     full_message = f"""
+    ## 最新の発言:
+    {latest_message_text}
+
     ## 過去の会話履歴:
     {formatted_history}
 
