@@ -38,6 +38,25 @@ def get_existing_minutes(meeting_id: str) -> dict:
 def should_update_minutes(message_history: list, existing_minutes: dict) -> dict:
     vertexai.init(project=Config.PROJECT_ID, location="us-central1")
 
+    # アジェンダの完了判定を行う関数
+    determine_update_agenda_completion = FunctionDeclaration(
+        name="determine_update_agenda_completion",
+        description=(
+            "Determine whether agenda items have been completed based on the latest statement. "
+            "Consider past discussions and existing records to ensure accuracy."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "completed_agenda_ids": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "List of agenda IDs that have been completed.",
+                }
+            },
+        },
+    )
+
     # 決定事項の更新を判定する関数
     determine_update_decision = FunctionDeclaration(
         name="determine_update_decision",
@@ -139,7 +158,11 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
     )
 
     tool = Tool(
-        function_declarations=[determine_update_decision, determine_update_action_plan]
+        function_declarations=[
+            determine_update_decision,
+            determine_update_action_plan,
+            determine_update_agenda_completion,
+        ]
     )
     model = GenerativeModel(
         "gemini-1.5-flash-002",
@@ -185,6 +208,16 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
             [
                 f"- {a.get('task', '不明なアクション')} (ID: {a.get('id', '不明')}, 担当: {a.get('assigned_to', '未設定')}, 期限: {a.get('due_date', '未設定')})"
                 for a in existing_minutes.get(MinutesFields.ACTION_PLAN, [])
+            ]
+        )
+        or "なし"
+    )
+
+    existing_agenda = (
+        "\n".join(
+            [
+                f"- {a.get('title', '不明なアジェンダ')} (ID: {a.get('id', '不明')}, 完了: {a.get('completed', '不明')})"
+                for a in existing_minutes.get(MinutesFields.AGENDA, [])
             ]
         )
         or "なし"
@@ -236,7 +269,38 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
         {},
     )
 
-    return {"decisions_update": decisions_update, "actions_update": actions_update}
+    full_message = f"""
+    ## 最新の発言:
+    {latest_message_text}
+
+    ## 過去の会話履歴:
+    {formatted_history}
+
+    ## 既存のアジェンダ:
+    {existing_agenda}
+    """
+
+    # アジェンダ完了判定
+    response_agenda = model.generate_content(full_message)
+    function_calls_agenda = (
+        response_agenda.candidates[0].function_calls
+        if response_agenda.candidates
+        else []
+    )
+    agenda_update = next(
+        (
+            fc.args
+            for fc in function_calls_agenda
+            if fc.name == "determine_update_agenda_completion"
+        ),
+        {},
+    )
+
+    return {
+        "decisions_update": decisions_update,
+        "actions_update": actions_update,
+        "agenda_update": agenda_update,
+    }
 
 
 def update_minutes(meeting_id: str):
@@ -247,6 +311,7 @@ def update_minutes(meeting_id: str):
 
     action_decisions = updates.get("decisions_update", {})
     action_actions = updates.get("actions_update", {})
+    action_agenda = updates.get("agenda_update", {})
 
     doc_ref = (
         db_client.collection(Config.FIRESTORE_MEETING_COLLECTION)
@@ -397,6 +462,23 @@ def update_minutes(meeting_id: str):
         else:
             print(f"✅ [削除完了] アクションプラン ID: {action_id_to_delete}")
         doc_ref.update({MinutesFields.ACTION_PLAN: actions})
+
+    ### **アジェンダの完了処理** ###
+    if action_agenda.get("completed_agenda_ids"):
+        completed_agenda_ids = action_agenda["completed_agenda_ids"]
+        agendas = existing_minutes.get(MinutesFields.AGENDA, [])
+
+        updated = False
+        for agenda in agendas:
+            if str(agenda["id"]) in completed_agenda_ids and not agenda["completed"]:
+                agenda["completed"] = True
+                updated = True
+                print(
+                    f"✅ [完了] アジェンダ ID: {agenda['id']} | {agenda.get('topic')}"
+                )
+
+        if updated:
+            doc_ref.update({MinutesFields.AGENDA: agendas})
 
 
 def set_agenda_in_minutes(meeting_id: str, agenda: List[AgendaItem]):
