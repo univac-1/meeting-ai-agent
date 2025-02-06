@@ -38,10 +38,11 @@ def get_existing_minutes(meeting_id: str) -> dict:
 def should_update_minutes(message_history: list, existing_minutes: dict) -> dict:
     vertexai.init(project=Config.PROJECT_ID, location="us-central1")
 
-    determine_update_func = FunctionDeclaration(
-        name="determine_update_requirements",
+    # 決定事項の更新を判定する関数
+    determine_update_decision = FunctionDeclaration(
+        name="determine_update_decision",
         description=(
-            "Determine whether to add, update, or delete meeting minutes items based on the latest statement. "
+            "Determine whether to add, update, or delete decisions based on the latest statement. "
             "Consider past discussions and existing records to ensure consistency."
         ),
         parameters={
@@ -49,15 +50,15 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
             "properties": {
                 "add_decision": {
                     "type": "boolean",
-                    "description": "Whether a new decision should be added to the minutes.",
+                    "description": "Whether to add a new decision.",
                 },
                 "add_decision_text": {
                     "type": "string",
-                    "description": "Text content of the decision to be added.",
+                    "description": "Content of the new decision.",
                 },
                 "update_decision": {
                     "type": "boolean",
-                    "description": "Whether an existing decision should be updated.",
+                    "description": "Whether to update an existing decision.",
                 },
                 "decision_id": {
                     "type": "string",
@@ -65,35 +66,49 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
                 },
                 "new_decision_text": {
                     "type": "string",
-                    "description": "New text for the decision being updated.",
+                    "description": "New text for the updated decision.",
                 },
                 "delete_decision": {
                     "type": "boolean",
-                    "description": "Whether an existing decision should be deleted.",
+                    "description": "Whether to delete an existing decision.",
                 },
                 "decision_id_to_delete": {
                     "type": "string",
-                    "description": "ID of the decision to be deleted.",
+                    "description": "ID of the decision to delete.",
                 },
+            },
+        },
+    )
+
+    # アクションプランの更新を判定する関数
+    determine_update_action_plan = FunctionDeclaration(
+        name="determine_update_action_plan",
+        description=(
+            "Determine whether to add, update, or delete action plans based on the latest statement. "
+            "Consider past discussions and existing records to ensure consistency."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
                 "add_action_plan": {
                     "type": "boolean",
-                    "description": "Whether a new action plan should be added.",
+                    "description": "Whether to add a new action plan.",
                 },
                 "add_action_plan_text": {
                     "type": "string",
-                    "description": "Text of the action plan to be added.",
+                    "description": "Text of the new action plan.",
                 },
                 "add_assigned_to": {
                     "type": "string",
-                    "description": "Person responsible for the action plan (leave empty if unknown)",
+                    "description": "Person responsible for the action plan (leave empty if unknown).",
                 },
                 "add_due_date": {
                     "type": "string",
-                    "description": "If the due date is uncertain, leave it empty. Do NOT guess an approximate date. Use YYYY-MM-DD format only for confirmed deadlines.",
+                    "description": "Use YYYY-MM-DD format for confirmed deadlines; leave empty if uncertain.",
                 },
                 "update_action_plan": {
                     "type": "boolean",
-                    "description": "Whether an existing action plan should be updated.",
+                    "description": "Whether to update an existing action plan.",
                 },
                 "action_id": {
                     "type": "string",
@@ -101,29 +116,31 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
                 },
                 "new_action_text": {
                     "type": "string",
-                    "description": "New text for the action plan being updated.",
+                    "description": "New text for the updated action plan.",
                 },
                 "new_assigned_to": {
                     "type": "string",
-                    "description": "New person assigned to the action plan (leave empty if unknown)",
+                    "description": "New person assigned (leave empty if unknown).",
                 },
                 "new_due_date": {
                     "type": "string",
-                    "description": "If the new due date is uncertain, leave it empty. Do NOT guess an approximate date. Use YYYY-MM-DD format only for confirmed deadlines.",
+                    "description": "Use YYYY-MM-DD format for confirmed deadlines; leave empty if uncertain.",
                 },
                 "delete_action_plan": {
                     "type": "boolean",
-                    "description": "Whether an existing action plan should be deleted.",
+                    "description": "Whether to delete an existing action plan.",
                 },
                 "action_id_to_delete": {
                     "type": "string",
-                    "description": "ID of the action plan to be deleted.",
+                    "description": "ID of the action plan to delete.",
                 },
             },
         },
     )
 
-    tool = Tool(function_declarations=[determine_update_func])
+    tool = Tool(
+        function_declarations=[determine_update_decision, determine_update_action_plan]
+    )
     model = GenerativeModel(
         "gemini-1.5-flash-002",
         tools=[tool],
@@ -137,7 +154,6 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
     latest_message = message_history[-1]  # 最新の発言
     past_messages = message_history[:-1]  # それ以前の履歴
 
-    # 過去の会話履歴のフォーマット
     formatted_history = (
         "\n".join(
             [
@@ -148,14 +164,12 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
         or "なし"
     )
 
-    # 最新の発言のフォーマット
     latest_message_text = (
         f"{latest_message.get('speak_at', '不明な時間')} - {latest_message.get('speaker', '不明な発言者')}: {latest_message.get('message', '発言なし')}"
         if latest_message
         else "なし"
     )
 
-    # 既存の決定事項のフォーマット
     existing_decisions = (
         "\n".join(
             [
@@ -166,7 +180,6 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
         or "なし"
     )
 
-    # 既存のアクションプランのフォーマット
     existing_actions = (
         "\n".join(
             [
@@ -191,17 +204,49 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
     {existing_actions}
     """
 
-    response = model.generate_content(full_message)
-    function_calls = (
-        response.candidates[0].function_calls if response.candidates else []
+    # 決定事項の更新判定
+    response_decision = model.generate_content(full_message)
+    function_calls_decision = (
+        response_decision.candidates[0].function_calls
+        if response_decision.candidates
+        else []
     )
-    return function_calls[0].args if function_calls else {}
+    decisions_update = next(
+        (
+            fc.args
+            for fc in function_calls_decision
+            if fc.name == "determine_update_decision"
+        ),
+        {},
+    )
+
+    # アクションプランの更新判定
+    response_action = model.generate_content(full_message)
+    function_calls_action = (
+        response_action.candidates[0].function_calls
+        if response_action.candidates
+        else []
+    )
+    actions_update = next(
+        (
+            fc.args
+            for fc in function_calls_action
+            if fc.name == "determine_update_action_plan"
+        ),
+        {},
+    )
+
+    return {"decisions_update": decisions_update, "actions_update": actions_update}
 
 
 def update_minutes(meeting_id: str):
     message_history = get_message_history(meeting_id, 10)
     existing_minutes = get_existing_minutes(meeting_id)
-    decision_action = should_update_minutes(message_history, existing_minutes)
+    # 決定事項とアクションプランの更新情報を取得
+    updates = should_update_minutes(message_history, existing_minutes)
+
+    action_decisions = updates.get("decisions_update", {})
+    action_actions = updates.get("actions_update", {})
 
     doc_ref = (
         db_client.collection(Config.FIRESTORE_MEETING_COLLECTION)
@@ -220,8 +265,8 @@ def update_minutes(meeting_id: str):
         )
 
     # --- 決定事項の追加 ---
-    if decision_action.get("add_decision"):
-        add_decision_text = decision_action.get("add_decision_text")
+    if action_decisions.get("add_decision"):
+        add_decision_text = action_decisions.get("add_decision_text")
         if add_decision_text:
             existing_decisions = existing_minutes.get(MinutesFields.DECISIONS, [])
 
@@ -237,14 +282,31 @@ def update_minutes(meeting_id: str):
                     {MinutesFields.DECISIONS: firestore.ArrayUnion([new_decision])}
                 )
 
+    ### 決定事項の処理 ###
+    # --- 決定事項の追加 ---
+    if action_decisions.get("add_decision"):
+        add_decision_text = action_decisions.get("add_decision_text")
+        if add_decision_text:
+            existing_decisions = existing_minutes.get(MinutesFields.DECISIONS, [])
+            if any(d["text"] == add_decision_text for d in existing_decisions):
+                print(f"⚠️ [スキップ] 同じ決定事項が既に存在: {add_decision_text}")
+            else:
+                new_decision = {
+                    "id": f"decision_{uuid4().hex}",
+                    "text": add_decision_text,
+                }
+                print(f"✅ [追加] 新しい決定事項: {new_decision}")
+                doc_ref.update(
+                    {MinutesFields.DECISIONS: firestore.ArrayUnion([new_decision])}
+                )
+
     # --- 決定事項の更新 ---
-    if decision_action.get("update_decision"):
-        decisions = existing_minutes.get(MinutesFields.DECISIONS, [])
-        target_id = decision_action["decision_id"]
-        new_decision_text = decision_action.get("new_decision_text")
+    if action_decisions.get("update_decision"):
+        target_id = action_decisions["decision_id"]
+        new_decision_text = action_decisions.get("new_decision_text")
         if new_decision_text:
             print(f"🛠 [更新開始] 決定事項 ID: {target_id}")
-            found = False
+            decisions = existing_minutes.get(MinutesFields.DECISIONS, [])
             for decision in decisions:
                 if decision["id"] == target_id:
                     old_text = decision["text"]
@@ -252,19 +314,17 @@ def update_minutes(meeting_id: str):
                     print(
                         f"🔄 [更新完了] ID: {target_id} | 旧: '{old_text}' → 新: '{decision['text']}'"
                     )
-                    found = True
                     break
-            if not found:
+            else:
                 print(
                     f"❌ [エラー] 更新対象の決定事項 (ID: {target_id}) が見つかりません"
                 )
             doc_ref.update({MinutesFields.DECISIONS: decisions})
 
     # --- 決定事項の削除 ---
-    if decision_action.get("delete_decision"):
-        decision_id_to_delete = decision_action["decision_id_to_delete"]
+    if action_decisions.get("delete_decision"):
+        decision_id_to_delete = action_decisions.get("decision_id_to_delete")
         decisions_before = existing_minutes.get(MinutesFields.DECISIONS, [])
-        print(f"🗑 [削除試行] 決定事項 ID: {decision_id_to_delete}")
         decisions = [d for d in decisions_before if d["id"] != decision_id_to_delete]
         if len(decisions_before) == len(decisions):
             print(
@@ -274,20 +334,20 @@ def update_minutes(meeting_id: str):
             print(f"✅ [削除完了] 決定事項 ID: {decision_id_to_delete}")
         doc_ref.update({MinutesFields.DECISIONS: decisions})
 
+    ### アクションプランの処理 ###
     # --- アクションプランの追加 ---
-    if decision_action.get("add_action_plan"):
-        new_action_text = decision_action.get("add_action_plan_text")
+    if action_actions.get("add_action_plan"):
+        new_action_text = action_actions.get("add_action_plan_text")
         if new_action_text:
             existing_actions = existing_minutes.get(MinutesFields.ACTION_PLAN, [])
-
             if any(a["task"] == new_action_text for a in existing_actions):
                 print(f"⚠️ [スキップ] 同じアクションプランが既に存在: {new_action_text}")
             else:
                 new_action = {
                     "id": f"action_{uuid4().hex}",
                     "task": new_action_text,
-                    "assigned_to": decision_action.get("add_assigned_to", "未設定"),
-                    "due_date": decision_action.get("add_due_date", "未設定"),
+                    "assigned_to": action_actions.get("add_assigned_to", "未設定"),
+                    "due_date": action_actions.get("add_due_date", "未設定"),
                 }
                 print(f"✅ [追加] 新しいアクションプラン: {new_action}")
                 doc_ref.update(
@@ -295,23 +355,22 @@ def update_minutes(meeting_id: str):
                 )
 
     # --- アクションプランの更新 ---
-    if decision_action.get("update_action_plan"):
-        actions = existing_minutes.get(MinutesFields.ACTION_PLAN, [])
-        target_action_id = decision_action["action_id"]
-        new_action_text = decision_action.get("new_action_text")
+    if action_actions.get("update_action_plan"):
+        target_action_id = action_actions["action_id"]
+        new_action_text = action_actions.get("new_action_text")
         if new_action_text:
             print(f"🛠 [更新開始] アクションプラン ID: {target_action_id}")
-            found = False
+            actions = existing_minutes.get(MinutesFields.ACTION_PLAN, [])
             for action in actions:
                 if action["id"] == target_action_id:
                     old_action = action.copy()  # 旧値を記録
                     action.update(
                         {
-                            "task": decision_action["new_action_text"],
-                            "assigned_to": decision_action.get(
+                            "task": new_action_text,
+                            "assigned_to": action_actions.get(
                                 "new_assigned_to", action["assigned_to"]
                             ),
-                            "due_date": decision_action.get(
+                            "due_date": action_actions.get(
                                 "new_due_date", action["due_date"]
                             ),
                         }
@@ -319,19 +378,17 @@ def update_minutes(meeting_id: str):
                     print(
                         f"🔄 [更新完了] ID: {target_action_id} | 旧: {old_action} → 新: {action}"
                     )
-                    found = True
                     break
-            if not found:
+            else:
                 print(
                     f"❌ [エラー] 更新対象のアクションプラン (ID: {target_action_id}) が見つかりません"
                 )
             doc_ref.update({MinutesFields.ACTION_PLAN: actions})
 
     # --- アクションプランの削除 ---
-    if decision_action.get("delete_action_plan"):
-        action_id_to_delete = decision_action["action_id_to_delete"]
+    if action_actions.get("delete_action_plan"):
+        action_id_to_delete = action_actions.get("action_id_to_delete")
         actions_before = existing_minutes.get(MinutesFields.ACTION_PLAN, [])
-        print(f"🗑 [削除試行] アクションプラン ID: {action_id_to_delete}")
         actions = [a for a in actions_before if a["id"] != action_id_to_delete]
         if len(actions_before) == len(actions):
             print(
