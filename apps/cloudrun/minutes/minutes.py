@@ -1,15 +1,13 @@
 from typing import List
+from function_calling.update_minutes import (
+    update_action_plan,
+    update_agenda,
+    update_decision,
+)
 from message.message import get_message_history
 from config import Config
 from minutes.constants import MinutesFields
 from meeting.meeting import AgendaItem
-import vertexai
-from vertexai.preview.generative_models import (
-    FunctionDeclaration,
-    GenerativeModel,
-    Tool,
-    ToolConfig,
-)
 from google.cloud import firestore
 from uuid import uuid4
 
@@ -36,145 +34,12 @@ def get_existing_minutes(meeting_id: str) -> dict:
 
 
 def should_update_minutes(message_history: list, existing_minutes: dict) -> dict:
-    vertexai.init(project=Config.PROJECT_ID, location="us-central1")
-
-    # アジェンダの完了判定を行う関数
-    determine_update_agenda_completion = FunctionDeclaration(
-        name="determine_update_agenda_completion",
-        description=(
-            "Determine whether agenda items have been completed based on the latest statement. "
-            "Consider past discussions and existing records to ensure accuracy."
-        ),
-        parameters={
-            "type": "object",
-            "properties": {
-                "completed_agenda_ids": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "List of agenda IDs that have been completed.",
-                }
-            },
-        },
-    )
-
-    # 決定事項の更新を判定する関数
-    determine_update_decision = FunctionDeclaration(
-        name="determine_update_decision",
-        description=(
-            "Determine whether to add, update, or delete decisions based on the latest statement. "
-            "Consider past discussions and existing records to ensure consistency."
-        ),
-        parameters={
-            "type": "object",
-            "properties": {
-                "add_decision": {
-                    "type": "boolean",
-                    "description": "Whether to add a new decision.",
-                },
-                "add_decision_text": {
-                    "type": "string",
-                    "description": "Content of the new decision.",
-                },
-                "update_decision": {
-                    "type": "boolean",
-                    "description": "Whether to update an existing decision.",
-                },
-                "decision_id": {
-                    "type": "string",
-                    "description": "ID of the decision to update.",
-                },
-                "new_decision_text": {
-                    "type": "string",
-                    "description": "New text for the updated decision.",
-                },
-                "delete_decision": {
-                    "type": "boolean",
-                    "description": "Whether to delete an existing decision.",
-                },
-                "decision_id_to_delete": {
-                    "type": "string",
-                    "description": "ID of the decision to delete.",
-                },
-            },
-        },
-    )
-
-    # アクションプランの更新を判定する関数
-    determine_update_action_plan = FunctionDeclaration(
-        name="determine_update_action_plan",
-        description=(
-            "Determine whether to add, update, or delete action plans based on the latest statement. "
-            "Consider past discussions and existing records to ensure consistency."
-        ),
-        parameters={
-            "type": "object",
-            "properties": {
-                "add_action_plan": {
-                    "type": "boolean",
-                    "description": "Whether to add a new action plan.",
-                },
-                "add_action_plan_text": {
-                    "type": "string",
-                    "description": "Text of the new action plan.",
-                },
-                "add_assigned_to": {
-                    "type": "string",
-                    "description": "Person responsible for the action plan (leave empty if unknown).",
-                },
-                "add_due_date": {
-                    "type": "string",
-                    "description": "Use YYYY-MM-DD format for confirmed deadlines; leave empty if uncertain.",
-                },
-                "update_action_plan": {
-                    "type": "boolean",
-                    "description": "Whether to update an existing action plan.",
-                },
-                "action_id": {
-                    "type": "string",
-                    "description": "ID of the action plan to update.",
-                },
-                "new_action_text": {
-                    "type": "string",
-                    "description": "New text for the updated action plan.",
-                },
-                "new_assigned_to": {
-                    "type": "string",
-                    "description": "New person assigned (leave empty if unknown).",
-                },
-                "new_due_date": {
-                    "type": "string",
-                    "description": "Use YYYY-MM-DD format for confirmed deadlines; leave empty if uncertain.",
-                },
-                "delete_action_plan": {
-                    "type": "boolean",
-                    "description": "Whether to delete an existing action plan.",
-                },
-                "action_id_to_delete": {
-                    "type": "string",
-                    "description": "ID of the action plan to delete.",
-                },
-            },
-        },
-    )
-
-    tool = Tool(
-        function_declarations=[
-            determine_update_decision,
-            determine_update_action_plan,
-            determine_update_agenda_completion,
-        ]
-    )
-    model = GenerativeModel(
-        "gemini-1.5-flash-002",
-        tools=[tool],
-        tool_config=ToolConfig(
-            function_calling_config=ToolConfig.FunctionCallingConfig(
-                mode=ToolConfig.FunctionCallingConfig.Mode.ANY
-            )
-        ),
-    )
 
     latest_message = message_history[-1]  # 最新の発言
+    print(latest_message.get("message"))
+    if len(latest_message.get("message", "")) <= 5:
+        print(f"発言が短いので更新対象外")
+        return {}
     past_messages = message_history[:-1]  # それ以前の履歴
 
     formatted_history = (
@@ -223,7 +88,18 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
         or "なし"
     )
 
-    full_message = f"""
+    full_action_message = f"""
+    ## 最新の発言:
+    {latest_message_text}
+
+    ## 過去の会話履歴:
+    {formatted_history}
+
+    ## 既存のアクションプラン:
+    {existing_actions}
+    """
+
+    full_decision_message = f"""
     ## 最新の発言:
     {latest_message_text}
 
@@ -232,44 +108,9 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
 
     ## 既存の決定事項:
     {existing_decisions}
-
-    ## 既存のアクションプラン:
-    {existing_actions}
     """
 
-    # 決定事項の更新判定
-    response_decision = model.generate_content(full_message)
-    function_calls_decision = (
-        response_decision.candidates[0].function_calls
-        if response_decision.candidates
-        else []
-    )
-    decisions_update = next(
-        (
-            fc.args
-            for fc in function_calls_decision
-            if fc.name == "determine_update_decision"
-        ),
-        {},
-    )
-
-    # アクションプランの更新判定
-    response_action = model.generate_content(full_message)
-    function_calls_action = (
-        response_action.candidates[0].function_calls
-        if response_action.candidates
-        else []
-    )
-    actions_update = next(
-        (
-            fc.args
-            for fc in function_calls_action
-            if fc.name == "determine_update_action_plan"
-        ),
-        {},
-    )
-
-    full_message = f"""
+    full_agenda_message = f"""
     ## 最新の発言:
     {latest_message_text}
 
@@ -280,26 +121,10 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
     {existing_agenda}
     """
 
-    # アジェンダ完了判定
-    response_agenda = model.generate_content(full_message)
-    function_calls_agenda = (
-        response_agenda.candidates[0].function_calls
-        if response_agenda.candidates
-        else []
-    )
-    agenda_update = next(
-        (
-            fc.args
-            for fc in function_calls_agenda
-            if fc.name == "determine_update_agenda_completion"
-        ),
-        {},
-    )
-
     return {
-        "decisions_update": decisions_update,
-        "actions_update": actions_update,
-        "agenda_update": agenda_update,
+        "decisions_update": update_decision(full_decision_message),
+        "actions_update": update_action_plan(full_action_message),
+        "agenda_update": update_agenda(full_agenda_message),
     }
 
 
