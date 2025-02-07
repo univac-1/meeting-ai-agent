@@ -6,14 +6,14 @@ import { RootState } from "@/store"
 import styles from "./index.module.scss"
 
 const RecordContent = () => {
-  const contentRef = useRef<HTMLElement>(null);
-  const lastMessageRef = useRef<HTMLDivElement>(null);
-  const chatHistory = useSelector((state: RootState) => state.global.chatHistory);
+  const contentRef = useRef<HTMLElement>(null)
+  const lastMessageRef = useRef<HTMLDivElement>(null)
+  const chatHistory = useSelector((state: RootState) => state.global.chatHistory)
 
   // chatHistory更新時に常にリストの最下部へスクロールする
   useEffect(() => {
-    lastMessageRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatHistory]);
+    lastMessageRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [chatHistory])
 
   return (
     <section className={styles.record} ref={contentRef}>
@@ -47,7 +47,7 @@ const RecordContent = () => {
       ))}
       <div ref={lastMessageRef} />
     </section>
-  );
-};
+  )
+}
 
-export default RecordContent;
+export default RecordContent
