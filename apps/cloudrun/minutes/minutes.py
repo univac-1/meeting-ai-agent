@@ -62,7 +62,7 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
         name="determine_update_decision",
         description=(
             "Determine whether to add, update, or delete decisions based on the latest statement. "
-            "Consider past discussions and existing records to ensure consistency."
+            "Ensure that the decision is expressed in a single line while considering past discussions and records."
         ),
         parameters={
             "type": "object",
@@ -104,7 +104,7 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
         name="determine_update_action_plan",
         description=(
             "Determine whether to add, update, or delete action plans based on the latest statement. "
-            "Consider past discussions and existing records to ensure consistency."
+            "Ensure that the action plan is expressed in a single line while considering past discussions and records."
         ),
         parameters={
             "type": "object",
