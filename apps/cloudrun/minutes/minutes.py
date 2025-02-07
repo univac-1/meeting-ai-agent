@@ -36,6 +36,9 @@ def get_existing_minutes(meeting_id: str) -> dict:
 def should_update_minutes(message_history: list, existing_minutes: dict) -> dict:
 
     latest_message = message_history[-1]  # 最新の発言
+    if len(latest_message.get("message", "")) <= 5:
+        print(f"発言が短いので更新しない:{latest_message}")
+        return {}
     past_messages = message_history[:-1]  # それ以前の履歴
 
     formatted_history = (
