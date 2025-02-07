@@ -1,20 +1,37 @@
-import { useMemo, useRef, useState, useEffect } from "react"
+import { useRef, useState, useEffect } from "react"
 import { db } from "@/firebase"
 import { doc, onSnapshot } from "firebase/firestore"
 import { useSelector } from "react-redux"
 import { RootState } from "@/store"
 import styles from "./index.module.scss"
 
+interface AgendaItem {
+  id: string
+  topic: string
+  duration: number
+  completed: boolean
+}
+
+interface DecisionItem {
+  id: string
+  text: string
+}
+
+interface ActionPlanItem {
+  id: string
+  task: string
+  assigned_to: string
+  due_date: string
+}
+
 let lastScrollTop = 0
 
 const Content = () => {
   const contentRef = useRef<HTMLElement>(null)
   const [humanScroll, setHumanScroll] = useState(false)
-  const [agenda, setAgenda] = useState<string[]>([])
-  const [decisions, setDecisions] = useState<string[]>([])
-  const [actionPlan, setActionPlan] = useState<
-    { task: string; assigned_to: string; due_date: string }[]
-  >([])
+  const [agenda, setAgenda] = useState<AgendaItem[]>([])
+  const [decisions, setDecisions] = useState<DecisionItem[]>([])
+  const [actionPlan, setActionPlan] = useState<ActionPlanItem[]>([])
   const meetingId = useSelector((state: RootState) => state.global.meetingId)
 
   useEffect(() => {
@@ -67,7 +84,9 @@ const Content = () => {
         <h3>アジェンダ</h3>
         <ul>
           {agenda.map((item, index) => (
-            <li key={index}>{item}</li>
+            <li key={item.id} className={item.completed ? styles.completed : ""}>
+              {item.completed ? "✅ " : "🔲 "} {`${item.topic}`}
+            </li>
           ))}
         </ul>
       </div>
@@ -75,8 +94,8 @@ const Content = () => {
       <div className={styles.section}>
         <h3>決定事項</h3>
         <ul>
-          {decisions.map((item, index) => (
-            <li key={index}>{item}</li>
+          {decisions.map((decision) => (
+            <li key={decision.id}>{decision.text}</li>
           ))}
         </ul>
       </div>
@@ -84,8 +103,8 @@ const Content = () => {
       <div className={styles.section}>
         <h3>アクションプラン</h3>
         <ul>
-          {actionPlan.map((item, index) => (
-            <li key={index}>
+          {actionPlan.map((item) => (
+            <li key={item.id}>
               {item.task} - 担当: {item.assigned_to} - 期限: {item.due_date}
             </li>
           ))}

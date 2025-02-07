@@ -7,6 +7,7 @@ import {
   DialogLanguageType,
   IMessage,
   ITextItem,
+  ICommentItem,
 } from "@/types"
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 import {
@@ -48,6 +49,7 @@ export interface InitialState {
   }
   messageList: IMessage[]
   meetingId: string
+  chatHistory: ICommentItem[]
 }
 
 const getInitialState = (): InitialState => {
@@ -76,6 +78,7 @@ const getInitialState = (): InitialState => {
     },
     messageList: [],
     meetingId: "",
+    chatHistory: [],
   }
 }
 
@@ -237,6 +240,9 @@ export const globalSlice = createSlice({
     setMeetingId: (state, action: PayloadAction<string>) => {
       state.meetingId = action.payload
     },
+    setChatHistory: (state, action: PayloadAction<ICommentItem[]>) => {
+      state.chatHistory = action.payload
+    },
   },
 })
 
@@ -264,6 +270,7 @@ export const {
   setTipSTTEnable,
   reset,
   setMeetingId,
+  setChatHistory,
 } = globalSlice.actions
 
 export default globalSlice.reducer

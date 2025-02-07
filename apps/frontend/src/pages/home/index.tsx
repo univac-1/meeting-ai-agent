@@ -30,7 +30,6 @@ const HomePage = () => {
         <div className={styles.btn} onClick={onClickJoin}>
           Join Meeting
         </div>
-        <div className={styles.version}>Version {version}</div>
       </section>
     </div>
   )
