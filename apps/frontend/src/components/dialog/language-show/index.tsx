@@ -99,9 +99,7 @@ const LanguageShowDialog = (props: ILanguageSettingDialogProps) => {
             <div className={styles.text} style={{ width: 160 }}>
               Live Language 1
             </div>
-            <div className={styles.text}>
-              Live Language 1 - Translation Language
-            </div>
+            <div className={styles.text}>Live Language 1 - Translation Language</div>
           </Space>
           <div className={styles.selectWrapper}>
             <Space>
@@ -134,9 +132,7 @@ const LanguageShowDialog = (props: ILanguageSettingDialogProps) => {
             <div className={styles.text} style={{ width: 160 }}>
               Live Language 2
             </div>
-            <div className={styles.text}>
-              Live Language 2 - Translation Language
-            </div>
+            <div className={styles.text}>Live Language 2 - Translation Language</div>
           </Space>
           <div className={styles.selectWrapper}>
             <Space>

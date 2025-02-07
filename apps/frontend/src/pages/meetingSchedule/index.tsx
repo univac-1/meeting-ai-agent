@@ -1,11 +1,11 @@
-import axios from "axios";
+import axios from "axios"
 import { Input, message, DatePicker, TimePicker, Button } from "antd"
 import { useState } from "react"
 import { version } from "../../../package.json"
 import { useNavigate } from "react-router-dom"
-import { CLOUD_RUN_ENDPOINT } from "@/config";
-import dayjs from "dayjs";
-import { CloseOutlined } from "@ant-design/icons";
+import { CLOUD_RUN_ENDPOINT } from "@/config"
+import dayjs from "dayjs"
+import { CloseOutlined } from "@ant-design/icons"
 
 import styles from "./index.module.scss"
 import logoSrc from "@/assets/login_logo.png"
@@ -51,7 +51,10 @@ const MeetingSchedulePage = () => {
 
   const onAgendaInputKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && agendaInput.trim() && durationInput.trim()) {
-      setAgendaItems([...agendaItems, { topic: agendaInput.trim(), duration: durationInput.trim() }])
+      setAgendaItems([
+        ...agendaItems,
+        { topic: agendaInput.trim(), duration: durationInput.trim() },
+      ])
       setAgendaInput("")
       setDurationInput("")
     }
@@ -63,32 +66,32 @@ const MeetingSchedulePage = () => {
 
   const handleApiCall = async () => {
     if (!meetingName.trim()) {
-      messageApi.error("会議名を入力してください。");
-      return;
+      messageApi.error("会議名を入力してください。")
+      return
     }
     if (!meetingPurpose.trim()) {
-      messageApi.error("会議の目的を入力してください。");
-      return;
+      messageApi.error("会議の目的を入力してください。")
+      return
     }
     if (!startDate) {
-      messageApi.error("開始日を選択してください。");
-      return;
+      messageApi.error("開始日を選択してください。")
+      return
     }
     if (!startTime) {
-      messageApi.error("開始時刻を選択してください。");
-      return;
+      messageApi.error("開始時刻を選択してください。")
+      return
     }
     if (!endTime) {
-      messageApi.error("終了時刻を選択してください。");
-      return;
+      messageApi.error("終了時刻を選択してください。")
+      return
     }
     if (participants.length === 0) {
-      messageApi.error("少なくとも1人の参加者を追加してください。");
-      return;
+      messageApi.error("少なくとも1人の参加者を追加してください。")
+      return
     }
     if (agendaItems.length === 0) {
-      messageApi.error("少なくとも1つのアジェンダを追加してください。");
-      return;
+      messageApi.error("少なくとも1つのアジェンダを追加してください。")
+      return
     }
 
     try {
@@ -99,19 +102,19 @@ const MeetingSchedulePage = () => {
         start_time: startTime.format("HH:mm"),
         end_time: endTime.format("HH:mm"),
         participants,
-        agenda: agendaItems.map(item => ({ topic: item.topic, duration: item.duration })),
-      });
-      
-      const meetingId = response.data?.data?.meeting_id;
+        agenda: agendaItems.map((item) => ({ topic: item.topic, duration: item.duration })),
+      })
+
+      const meetingId = response.data?.data?.meeting_id
       if (meetingId) {
-        messageApi.success("Meeting scheduled successfully!");
-        nav(`/meeting/${meetingId}`);
+        messageApi.success("Meeting scheduled successfully!")
+        nav(`/meeting/${meetingId}`)
       } else {
-        throw new Error("Meeting ID is undefined");
+        throw new Error("Meeting ID is undefined")
       }
     } catch (error) {
-      console.error("Error calling API:", error);
-      messageApi.error("Failed to schedule meeting.");
+      console.error("Error calling API:", error)
+      messageApi.error("Failed to schedule meeting.")
     }
   }
 
@@ -195,7 +198,11 @@ const MeetingSchedulePage = () => {
           {participants.map((participant, index) => (
             <div key={index} style={{ display: "flex", alignItems: "center" }}>
               <span style={{ flexGrow: 1 }}>{participant}</span>
-              <Button type="link" icon={<CloseOutlined />} onClick={() => removeParticipant(index)} />
+              <Button
+                type="link"
+                icon={<CloseOutlined />}
+                onClick={() => removeParticipant(index)}
+              />
             </div>
           ))}
         </div>
@@ -223,14 +230,20 @@ const MeetingSchedulePage = () => {
         <div className={styles.agendaList}>
           {agendaItems.map((item, index) => (
             <div key={index} style={{ display: "flex", alignItems: "center" }}>
-              <span style={{ flexGrow: 1 }}>{item.topic} - {item.duration}分</span>
-              <Button type="link" icon={<CloseOutlined />} onClick={() => removeAgendaItem(index)} />
+              <span style={{ flexGrow: 1 }}>
+                {item.topic} - {item.duration}分
+              </span>
+              <Button
+                type="link"
+                icon={<CloseOutlined />}
+                onClick={() => removeAgendaItem(index)}
+              />
             </div>
           ))}
         </div>
         <div className={styles.btnWrapper}>
           <span className={styles.btnCancel} onClick={onClickCancel}>
-           Cancel
+            Cancel
           </span>
           <span className={styles.btnSave} onClick={onClickSave}>
             Save
