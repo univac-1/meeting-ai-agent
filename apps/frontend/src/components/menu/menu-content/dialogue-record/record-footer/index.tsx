@@ -3,14 +3,13 @@ import { useEffect, useRef, useMemo, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { RootState } from "@/store"
 import { useResizeObserver, formatTime } from "@/common"
-import { SettingIcon } from "@/components/icons"
+import { SettingIcon, AiIcon } from "@/components/icons"
 import axios from "axios"
 
 import { CLOUD_RUN_ENDPOINT } from "@/config"
 import { db } from "@/firebase"
 import { collection, onSnapshot, orderBy, query, doc } from "firebase/firestore"
 import { Button, notification, Space } from "antd"
-import { AiIcon } from "@/components/icons"
 
 import styles from "./index.module.scss"
 
