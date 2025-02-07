@@ -45,7 +45,7 @@ import { CLOUD_RUN_ENDPOINT } from "@/config"
 import { db } from "@/firebase"
 import { collection, onSnapshot, orderBy, query, doc } from "firebase/firestore"
 
-// antd 
+// antd
 import { Button, notification, Space } from "antd"
 
 // icon
@@ -63,7 +63,7 @@ window.rtcManager = rtcManager
 window.rtmManager = rtmManager
 window.sttManager = sttManager
 
-type StatusType = "init" | "recording" | "ready";
+type StatusType = "init" | "recording" | "ready"
 
 const MeetingPage = () => {
   const dispatch = useDispatch()
@@ -87,20 +87,19 @@ const MeetingPage = () => {
   const [centerUserId, setCenterUserId] = useState(userInfo.userId)
 
   // notification
-  const [api, contextHolder] = notification.useNotification();
+  const [api, contextHolder] = notification.useNotification()
 
   const meetingId = useSelector((state: RootState) => state.global.meetingId)
-  const initialLoadRef = useRef(true);
-
+  const initialLoadRef = useRef(true)
 
   const { transcript, listening, browserSupportsSpeechRecognition } = useSpeechRecognition()
 
-  const [status, setStatus] = useState<StatusType>("init");
+  const [status, setStatus] = useState<StatusType>("init")
 
   // 以下、MediaRecorder 関連のインスタンスを useRef で保持
-  const streamRef = useRef<MediaStream | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const audioDataRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null)
+  const recorderRef = useRef<MediaRecorder | null>(null)
+  const audioDataRef = useRef<Blob[]>([])
 
   // APIキーやメッセージ送信 API のエンドポイント（適宜修正）
   const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY
@@ -111,26 +110,33 @@ const MeetingPage = () => {
       dispatch(addMessage({ content: "Please login first", type: "error" }))
       nav("/")
     }
-    startVoiceRecognition();
-    init();
+    startVoiceRecognition()
+    init()
 
     return () => {
-      destory();
-      stopVoiceRecognition();
+      destory()
+      stopVoiceRecognition()
     }
   }, [])
 
   // 通知を表示する
   const openNotification = () => {
     console.log("openNotification")
-    const key = `open${Date.now()}`;
+    const key = `open${Date.now()}`
     const btn = (
       <Space>
-        <Button type="link" size="small" onClick={() => {handleGetAIOpinion();api.destroy()}}>
+        <Button
+          type="link"
+          size="small"
+          onClick={() => {
+            handleGetAIOpinion()
+            api.destroy()
+          }}
+        >
           Get AI's Opinion
         </Button>
       </Space>
-    );
+    )
     api.open({
       message: "AIエージェントから意見があります",
       description: "発言を許可する場合は「Get AI's Opinion」ボタンをクリックしてください。",
@@ -139,8 +145,8 @@ const MeetingPage = () => {
       icon: <AiIcon></AiIcon>,
       btn,
       key,
-    });
-  };
+    })
+  }
 
   const handleGetAIOpinion = async () => {
     try {
@@ -154,44 +160,46 @@ const MeetingPage = () => {
   useEffect(() => {
     if (!channel) return
 
-    const docRef = doc(db, "meetings", channel);
-    const unsubscribe = onSnapshot(docRef, (docSnapshot) => {
-      if (docSnapshot.exists()) {
-        const data = docSnapshot.data();
-        console.log("ドキュメントが更新されました:", data);
+    const docRef = doc(db, "meetings", channel)
+    const unsubscribe = onSnapshot(
+      docRef,
+      (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const data = docSnapshot.data()
+          console.log("ドキュメントが更新されました:", data)
 
-        // intervention_request.statusが"pending"の場合の処理
-        if (data.intervention_request?.status === "pending") {
-          console.log("介入リクエストがペンディング状態になりました。");
-          openNotification();
+          // intervention_request.statusが"pending"の場合の処理
+          if (data.intervention_request?.status === "pending") {
+            console.log("介入リクエストがペンディング状態になりました。")
+            openNotification()
+          }
+        } else {
+          console.log("ドキュメントが存在しません")
         }
-        else {
-        }
-      } else {
-        console.log("ドキュメントが存在しません");
-      }
-    }, (error) => {
-      console.error("サブスクライブ中にエラーが発生しました:", error);
-    });
+      },
+      (error) => {
+        console.error("サブスクライブ中にエラーが発生しました:", error)
+      },
+    )
 
     return () => unsubscribe()
   }, [channel])
 
   // 音声合成などのための補助関数
   const base64ToBlob = (base64Data: string, contentType: string): Blob => {
-    const byteCharacters = atob(base64Data);
-    const byteArrays: Uint8Array[] = [];
+    const byteCharacters = atob(base64Data)
+    const byteArrays: Uint8Array[] = []
     for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-      const slice = byteCharacters.slice(offset, offset + 512);
-      const byteNumbers: number[] = new Array(slice.length);
+      const slice = byteCharacters.slice(offset, offset + 512)
+      const byteNumbers: number[] = new Array(slice.length)
       for (let i = 0; i < slice.length; i++) {
-        byteNumbers[i] = slice.charCodeAt(i);
+        byteNumbers[i] = slice.charCodeAt(i)
       }
-      const byteArray = new Uint8Array(byteNumbers);
-      byteArrays.push(byteArray);
+      const byteArray = new Uint8Array(byteNumbers)
+      byteArrays.push(byteArray)
     }
-    return new Blob(byteArrays, { type: contentType });
-  };
+    return new Blob(byteArrays, { type: contentType })
+  }
 
   const handleTextToSpeech = async (text: string): Promise<void> => {
     try {
@@ -214,91 +222,91 @@ const MeetingPage = () => {
               volumeGainDb: "-90.0",
             },
           }),
-        }
-      );
+        },
+      )
 
-      const data = await response.json();
+      const data = await response.json()
       if (data.audioContent) {
-        const audioBlob = base64ToBlob(data.audioContent, "audio/mp3");
-        const url = URL.createObjectURL(audioBlob);
-        const audio = new Audio(url);
-        await audio.play();
+        const audioBlob = base64ToBlob(data.audioContent, "audio/mp3")
+        const url = URL.createObjectURL(audioBlob)
+        const audio = new Audio(url)
+        await audio.play()
       }
     } catch (error) {
-      console.error("音声合成に失敗した:", error);
+      console.error("音声合成に失敗した:", error)
     }
-  };
+  }
 
   // AIコメント処理関数群
   const handleEvaluation = (aiComment: ICommentItem) => {
-    console.log("評価コメントを処理します:", aiComment.message);
+    console.log("評価コメントを処理します:", aiComment.message)
     // 評価に関する追加処理があればここに記述
-  };
+  }
 
   const handleSummary = (aiComment: ICommentItem) => {
-    console.log("要約コメントを処理します:", aiComment.message);
+    console.log("要約コメントを処理します:", aiComment.message)
     // 要約に関する追加処理があればここに記述
-  };
+  }
 
   const handleFeedback = (aiComment: ICommentItem) => {
-    console.log("フィードバックコメントを処理します:", aiComment.message);
+    console.log("フィードバックコメントを処理します:", aiComment.message)
     // 音声読み上げ処理を実行する
-    handleTextToSpeech(aiComment.message);
-  };
+    handleTextToSpeech(aiComment.message)
+  }
 
   const handleAIComment = (aiComment: ICommentItem) => {
     if (!aiComment.meta || !aiComment.meta.type) {
-      console.warn("AIコメントのタイプが不明です:", aiComment);
-      return;
+      console.warn("AIコメントのタイプが不明です:", aiComment)
+      return
     }
     switch (aiComment.meta.type) {
       case "evaluation":
-        handleEvaluation(aiComment);
-        break;
+        handleEvaluation(aiComment)
+        break
       case "summary":
-        handleSummary(aiComment);
-        break;
+        handleSummary(aiComment)
+        break
       case "feedback":
-        handleFeedback(aiComment);
-        break;
+        handleFeedback(aiComment)
+        break
       default:
-        console.warn("未対応のAIコメントタイプです:", aiComment.meta.type);
+        console.warn("未対応のAIコメントタイプです:", aiComment.meta.type)
     }
-  };
+  }
 
   // メッセージ履歴の取得およびAIコメントの検出処理
   useEffect(() => {
-    if (!meetingId) return;
-    const commentsRef = collection(db, "meetings", meetingId, "comments");
-    const q = query(commentsRef, orderBy("speak_at"));
+    if (!meetingId) return
+    const commentsRef = collection(db, "meetings", meetingId, "comments")
+    const q = query(commentsRef, orderBy("speak_at"))
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       // 全ドキュメントからメッセージ履歴を構築
       const messageHistory: ICommentItem[] = querySnapshot.docs.map((doc) => {
-        const data = doc.data() as ICommentItem;
-        data.speaker = data.speaker.toString();
-        return data;
-      });
+        const data = doc.data() as ICommentItem
+        data.speaker = data.speaker.toString()
+        return data
+      })
 
       // 追加されたドキュメントに対してのみ処理
       querySnapshot.docChanges().forEach((change) => {
         if (change.type === "added") {
-          const data = change.doc.data() as ICommentItem;
-          data.speaker = data.speaker.toString();
+          const data = change.doc.data() as ICommentItem
+          data.speaker = data.speaker.toString()
           if (!initialLoadRef.current && data?.meta && data?.meta?.role === "ai") {
-            handleAIComment(data);
+            handleAIComment(data)
           }
         }
-      });
+      })
 
       if (initialLoadRef.current) {
-        initialLoadRef.current = false;
+        initialLoadRef.current = false
       }
-      dispatch(setChatHistory(messageHistory));
-    });
+      dispatch(setChatHistory(messageHistory))
+    })
 
-    return () => unsubscribe();
-  }, [meetingId]);
+    return () => unsubscribe()
+  }, [meetingId])
 
   // useSpeechRecognition による listening の変化に合わせ、録音開始／停止する
   useEffect(() => {
@@ -307,11 +315,11 @@ const MeetingPage = () => {
       return
     }
     if (listening) {
-      console.log("[useEffect] listening true 発話開始検知 → startRecording");
-      startRecording();
+      console.log("[useEffect] listening true 発話開始検知 → startRecording")
+      startRecording()
     } else {
-      console.log("[useEffect] listening false 発話終了検知 → stopRecording");
-      stopRecording();
+      console.log("[useEffect] listening false 発話終了検知 → stopRecording")
+      stopRecording()
     }
   }, [listening, browserSupportsSpeechRecognition])
 
@@ -324,11 +332,11 @@ const MeetingPage = () => {
 
     if (!localAudioMute) {
       if (!listening) {
-        SpeechRecognition.startListening();
+        SpeechRecognition.startListening()
       }
     } else {
       if (listening) {
-        SpeechRecognition.stopListening();
+        SpeechRecognition.stopListening()
       }
     }
   }, [localAudioMute, listening, browserSupportsSpeechRecognition])
@@ -336,7 +344,7 @@ const MeetingPage = () => {
   // useSpeechRecognition の transcript の変化によるメッセージ送信（既存処理）
   useEffect(() => {
     if (!localAudioMute && transcript) {
-      console.log("[WebSpeechAPI] 認識結果:", transcript);
+      console.log("[WebSpeechAPI] 認識結果:", transcript)
       // axios
       //   .post(
       //     `${CLOUD_RUN_ENDPOINT}/message`,
@@ -374,32 +382,32 @@ const MeetingPage = () => {
     return map
   }, [userRtmList, userInfo])
 
-    // listen events
-    useEffect(() => {
-      window.rtmManager.on("userListChanged", onRtmUserListChanged)
-      window.rtmManager.on("languagesChanged", onLanguagesChanged)
-      window.rtmManager.on("sttDataChanged", onSttDataChanged)
-      window.rtcManager.on("localUserChanged", onLocalUserChanged)
-      window.rtcManager.on("remoteUserChanged", onRemoteUserChanged)
-      window.rtcManager.on("textstreamReceived", onTextStreamReceived)
-  
-      return () => {
-        window.rtmManager.off("userListChanged", onRtmUserListChanged)
-        window.rtmManager.off("languagesChanged", onLanguagesChanged)
-        window.rtmManager.off("sttDataChanged", onSttDataChanged)
-        window.rtcManager.off("localUserChanged", onLocalUserChanged)
-        window.rtcManager.off("remoteUserChanged", onRemoteUserChanged)
-        window.rtcManager.off("textstreamReceived", onTextStreamReceived)
-      }
-    }, [simpleUserMap])
-  
-    useEffect(() => {
-      localTracks?.videoTrack?.setMuted(localVideoMute)
-    }, [localTracks?.videoTrack, localVideoMute])
-  
-    useEffect(() => {
-      localTracks?.audioTrack?.setMuted(localAudioMute)
-    }, [localTracks?.audioTrack, localAudioMute])
+  // listen events
+  useEffect(() => {
+    window.rtmManager.on("userListChanged", onRtmUserListChanged)
+    window.rtmManager.on("languagesChanged", onLanguagesChanged)
+    window.rtmManager.on("sttDataChanged", onSttDataChanged)
+    window.rtcManager.on("localUserChanged", onLocalUserChanged)
+    window.rtcManager.on("remoteUserChanged", onRemoteUserChanged)
+    window.rtcManager.on("textstreamReceived", onTextStreamReceived)
+
+    return () => {
+      window.rtmManager.off("userListChanged", onRtmUserListChanged)
+      window.rtmManager.off("languagesChanged", onLanguagesChanged)
+      window.rtmManager.off("sttDataChanged", onSttDataChanged)
+      window.rtcManager.off("localUserChanged", onLocalUserChanged)
+      window.rtcManager.off("remoteUserChanged", onRemoteUserChanged)
+      window.rtcManager.off("textstreamReceived", onTextStreamReceived)
+    }
+  }, [simpleUserMap])
+
+  useEffect(() => {
+    localTracks?.videoTrack?.setMuted(localVideoMute)
+  }, [localTracks?.videoTrack, localVideoMute])
+
+  useEffect(() => {
+    localTracks?.audioTrack?.setMuted(localAudioMute)
+  }, [localTracks?.audioTrack, localAudioMute])
 
   const userDataList = useMemo(() => {
     const list: IUserData[] = []
@@ -438,12 +446,12 @@ const MeetingPage = () => {
         channel,
       }),
     ])
-    await rtcManager.publish();
+    await rtcManager.publish()
   }
 
   const destory = async () => {
-    await Promise.all([rtcManager.destroy(), sttManager.destroy()]);
-    dispatch(reset());
+    await Promise.all([rtcManager.destroy(), sttManager.destroy()])
+    dispatch(reset())
   }
 
   const onLocalUserChanged = (tracks: IUserTracks) => {
@@ -499,83 +507,80 @@ const MeetingPage = () => {
           echoCancellation: true,
           noiseSuppression: true,
         },
-      });
-      streamRef.current = stream;
-      initializeRecorder();
-      setStatus("ready");
-    } catch (error) {
-    }
-  };
+      })
+      streamRef.current = stream
+      initializeRecorder()
+      setStatus("ready")
+    } catch (error) {}
+  }
 
   /**
    * MediaRecorder の初期化処理
    */
   const initializeRecorder = (): void => {
-    if (!streamRef.current) return;
-    const recorder = new MediaRecorder(streamRef.current);
-    recorderRef.current = recorder;
-    audioDataRef.current = [];
+    if (!streamRef.current) return
+    const recorder = new MediaRecorder(streamRef.current)
+    recorderRef.current = recorder
+    audioDataRef.current = []
     recorder.addEventListener("dataavailable", (event: BlobEvent) => {
-      audioDataRef.current.push(event.data);
-    });
-    recorder.addEventListener("stop", handleRecordingStop);
-  };
+      audioDataRef.current.push(event.data)
+    })
+    recorder.addEventListener("stop", handleRecordingStop)
+  }
 
   /**
    * 録音開始処理
    */
   const startRecording = (): void => {
-    if (!recorderRef.current) return;
-    audioDataRef.current = [];
+    if (!recorderRef.current) return
+    audioDataRef.current = []
     try {
-      recorderRef.current.start();
-      setStatus("recording");
-    } catch (error) {
-    }
-  };
+      recorderRef.current.start()
+      setStatus("recording")
+    } catch (error) {}
+  }
 
   /**
    * 録音停止処理
    */
   const stopRecording = (): void => {
-    if (!recorderRef.current || recorderRef.current.state !== "recording") return;
+    if (!recorderRef.current || recorderRef.current.state !== "recording") return
     try {
-      recorderRef.current.stop();
-      setStatus("ready");
-    } catch (error) {
-    }
-  };
+      recorderRef.current.stop()
+      setStatus("ready")
+    } catch (error) {}
+  }
 
   /**
    * 録音停止時の処理
    * 録音された Blob を Base64 に変換し、Google Cloud Speech-to-Text API へ送信する
    */
   const handleRecordingStop = (): void => {
-    const audioBlob: Blob = new Blob(audioDataRef.current);
-    const reader = new FileReader();
+    const audioBlob: Blob = new Blob(audioDataRef.current)
+    const reader = new FileReader()
     reader.onload = () => {
       if (reader.result instanceof ArrayBuffer) {
-        const uint8Array = new Uint8Array(reader.result);
-        const base64Audio = arrayBufferToBase64(uint8Array);
-        googleCloudSpeechToTextAPI(base64Audio);
+        const uint8Array = new Uint8Array(reader.result)
+        const base64Audio = arrayBufferToBase64(uint8Array)
+        googleCloudSpeechToTextAPI(base64Audio)
       }
-    };
-    reader.readAsArrayBuffer(audioBlob);
-  };
+    }
+    reader.readAsArrayBuffer(audioBlob)
+  }
 
   /**
    * ArrayBuffer を Base64 に変換する処理
    */
   const arrayBufferToBase64 = (buffer: ArrayBuffer | Uint8Array): string => {
-    let binary = "";
-    const bytes = new Uint8Array(buffer);
-    const len = bytes.byteLength;
+    let binary = ""
+    const bytes = new Uint8Array(buffer)
+    const len = bytes.byteLength
     for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(bytes[i]);
+      binary += String.fromCharCode(bytes[i])
     }
-    const base64 = window.btoa(binary);
-    return base64;
-  };
+    const base64 = window.btoa(binary)
+    return base64
+  }
 
   /**
    * Google Cloud Speech-to-Text API へ録音データを送信する
@@ -592,7 +597,7 @@ const MeetingPage = () => {
       audio: {
         content: base64Audio,
       },
-    };
+    }
 
     try {
       const response = await fetch(
@@ -603,19 +608,18 @@ const MeetingPage = () => {
             "Content-Type": "application/json; charset=utf-8",
           },
           body: JSON.stringify(content),
-        }
-      );
-      const resultJson = await response.json();
-      const resultTranscript =
-        resultJson.results?.[0]?.alternatives?.[0]?.transcript || "";
-      console.log("[googleCloudSpeechToTextAPI] 認識結果:", resultTranscript);
+        },
+      )
+      const resultJson = await response.json()
+      const resultTranscript = resultJson.results?.[0]?.alternatives?.[0]?.transcript || ""
+      console.log("[googleCloudSpeechToTextAPI] 認識結果:", resultTranscript)
       if (resultTranscript) {
-        sendMessage(resultTranscript);
+        sendMessage(resultTranscript)
       }
     } catch (error) {
-      console.error("[googleCloudSpeechToTextAPI] エラー:", error);
+      console.error("[googleCloudSpeechToTextAPI] エラー:", error)
     }
-  };
+  }
 
   /**
    * 取得したテキストを既存のメッセージ送信 API に渡す処理
@@ -633,29 +637,29 @@ const MeetingPage = () => {
           headers: {
             "Content-type": "application/json; charset=UTF-8",
           },
-        }
-      );
-      console.log("[sendMessage] メッセージ送信成功", response.data);
+        },
+      )
+      console.log("[sendMessage] メッセージ送信成功", response.data)
     } catch (error) {
-      console.error("[sendMessage] メッセージ送信エラー:", error);
+      console.error("[sendMessage] メッセージ送信エラー:", error)
     }
-  };
+  }
 
   /**
    * 音声認識および録音を完全に停止する処理
    */
   const stopVoiceRecognition = (): void => {
-    console.log("[stopVoiceRecognition] 停止処理開始");
+    console.log("[stopVoiceRecognition] 停止処理開始")
     if (recorderRef.current && recorderRef.current.state === "recording") {
-      recorderRef.current.stop();
-      console.log("[stopVoiceRecognition] 録音停止");
+      recorderRef.current.stop()
+      console.log("[stopVoiceRecognition] 録音停止")
     }
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      console.log("[stopVoiceRecognition] ストリーム停止");
+      streamRef.current.getTracks().forEach((track) => track.stop())
+      console.log("[stopVoiceRecognition] ストリーム停止")
     }
-    setStatus("init");
-  };
+    setStatus("init")
+  }
 
   return (
     <div className={styles.meetingPage}>
