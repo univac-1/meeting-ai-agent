@@ -181,6 +181,8 @@ def update_minutes(meeting_id: str):
             decisions = existing_minutes.get(MinutesFields.DECISIONS, [])
             for decision in decisions:
                 if decision["id"] == target_id:
+                    if decision["txet"] == new_decision_text:
+                        break
                     old_text = decision["text"]
                     decision["text"] = new_decision_text
                     print(
@@ -235,6 +237,8 @@ def update_minutes(meeting_id: str):
             actions = existing_minutes.get(MinutesFields.ACTION_PLAN, [])
             for action in actions:
                 if action["id"] == target_action_id:
+                    if action["task"] == new_decision_text:
+                        break
                     old_action = action.copy()  # 旧値を記録
                     action.update(
                         {
