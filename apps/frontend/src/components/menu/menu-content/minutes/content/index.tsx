@@ -81,7 +81,7 @@ const Content = () => {
   return (
     <section className={styles.record} ref={contentRef}>
       <div className={styles.section}>
-        <h3>アジェンダ</h3>
+        <h3>Agenda</h3>
         <ul>
           {agenda.map((item, index) => (
             <li key={item.id} className={item.completed ? styles.completed : ""}>
@@ -92,7 +92,7 @@ const Content = () => {
       </div>
 
       <div className={styles.section}>
-        <h3>決定事項</h3>
+        <h3>Decisions</h3>
         <ul>
           {decisions.map((decision) => (
             <li key={decision.id}>{decision.text}</li>
@@ -101,7 +101,7 @@ const Content = () => {
       </div>
 
       <div className={styles.section}>
-        <h3>アクションプラン</h3>
+        <h3>Action Plan</h3>
         <ul>
           {actionPlan.map((item) => (
             <li key={item.id}>
