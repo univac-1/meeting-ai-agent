@@ -1,4 +1,4 @@
-import { MicIcon, CamIcon, MemberIcon, TranscriptionIcon, AiIcon, MinutesIcon } from "../icons"
+import { MicIcon, CamIcon, MemberIcon, ConversationIcon, AiIcon, MinutesIcon } from "../icons"
 import { showAIModule } from "@/common"
 import { useSelector, useDispatch } from "react-redux"
 import {
@@ -139,7 +139,7 @@ const Footer = (props: IFooterProps) => {
         </span>
         {/* dialog */}
         <span className={`${styles.item}`} onClick={onClickDialogRecord}>
-          <TranscriptionIcon active={dialogRecordShow}></TranscriptionIcon>
+          <ConversationIcon active={dialogRecordShow}></ConversationIcon>
           <span className={styles.text}>Conversation History</span>
         </span>
         {/* minutes */}
