@@ -74,23 +74,19 @@ def _check_if_intervention_needed(meeting_id: str) -> Tuple[bool, Optional[str]]
     """介入が必要かどうかを判断する"""
     intervention_request = _get_intervention_request(meeting_id)
     
-    # 既に介入リクエストが存在し、かつ完了していない場合は新たな介入は不要
-    if intervention_request is not None:
-        if intervention_request.get("status") == InterventionStatus.PENDING:
+    if intervention_request:
+        # 文字列形式の日時を比較
+        tz_japan = pytz.timezone("Asia/Tokyo")
+        now = datetime.now(tz_japan).strftime("%Y-%m-%d %H:%M:%S")
+        last_update = intervention_request.get("updated_at")
+        
+        time_diff = (
+            datetime.strptime(now, "%Y-%m-%d %H:%M:%S") - 
+            datetime.strptime(last_update, "%Y-%m-%d %H:%M:%S")
+        ).total_seconds()
+        
+        if time_diff < AGENT_INTERVENTION_SPAN_SECONDS:
             return False, None
-        if intervention_request.get("status") == InterventionStatus.COMPLETED:
-            # 文字列形式の日時を比較
-            tz_japan = pytz.timezone("Asia/Tokyo")
-            now = datetime.now(tz_japan).strftime("%Y-%m-%d %H:%M:%S")
-            last_update = intervention_request.get("updated_at")
-            
-            time_diff = (
-                datetime.strptime(now, "%Y-%m-%d %H:%M:%S") - 
-                datetime.strptime(last_update, "%Y-%m-%d %H:%M:%S")
-            ).total_seconds()
-            
-            if time_diff < AGENT_INTERVENTION_SPAN_SECONDS:
-                return False, None
 
     # 会議データを取得
     meeting_input = _get_meeting_data_for_intervention(meeting_id)
