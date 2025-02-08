@@ -37,8 +37,8 @@ def create_meeting(
     Returns:
         str: 生成されたユニークな会議ID
     """
-    # UUIDの生成
-    meeting_id = str(uuid.uuid4())
+    # 会議IDの生成
+    meeting_id = str(uuid.uuid4())[:8]
 
     # 保存するデータの構築
     data = {
