@@ -46,12 +46,12 @@ const MeetingInfoPage = () => {
 
   const agendaColumns = [
     {
-      title: "トピック",
+      title: "Topic",
       dataIndex: "topic",
       key: "topic",
     },
     {
-      title: "時間 (分)",
+      title: "Duration (minutes)",
       dataIndex: "duration",
       key: "duration",
     },
@@ -59,15 +59,15 @@ const MeetingInfoPage = () => {
 
   const dataSource = data
     ? [
-        { key: "1", label: "会議ID", value: meetingId },
-        { key: "2", label: "会議名", value: data.meeting_name },
-        { key: "3", label: "目的", value: data.meeting_purpose },
-        { key: "4", label: "開始日", value: data.start_date },
-        { key: "5", label: "開始時刻", value: data.start_time },
-        { key: "6", label: "終了時刻", value: data.end_time },
+        { key: "1", label: "Meeting ID", value: meetingId },
+        { key: "2", label: "Meeting Name", value: data.meeting_name },
+        { key: "3", label: "Purpose", value: data.meeting_purpose },
+        { key: "4", label: "Start Date", value: data.start_date },
+        { key: "5", label: "Start Time", value: data.start_time },
+        { key: "6", label: "End Time", value: data.end_time },
         {
           key: "7",
-          label: "参加者",
+          label: "Participants",
           value: (
             <ul>
               {data.participants.map((participant: string, index: number) => (
@@ -78,12 +78,12 @@ const MeetingInfoPage = () => {
         },
         {
           key: "8",
-          label: "アジェンダ",
+          label: "Agenda",
           value: (
             <ul>
               {data.agenda.map((item: any, index: number) => (
                 <li key={index}>
-                  {item.topic} - {item.duration}分
+                  {item.topic} - {item.duration} minutes
                 </li>
               ))}
             </ul>
@@ -93,8 +93,8 @@ const MeetingInfoPage = () => {
     : []
 
   const columns = [
-    { title: "ラベル", dataIndex: "label", key: "label" },
-    { title: "値", dataIndex: "value", key: "value" },
+    { title: "Label", dataIndex: "label", key: "label" },
+    { title: "Value", dataIndex: "value", key: "value" },
   ]
 
   return (
@@ -102,9 +102,6 @@ const MeetingInfoPage = () => {
       {contextHolder}
       <section className={styles.content}>
         <div className={styles.title}>
-          <div className={styles.logo}>
-            <img src={logoSrc} alt="" />
-          </div>
           <div className={styles.text}>Meeting Info</div>
         </div>
         <Table columns={columns} dataSource={dataSource} pagination={false} showHeader={false} />
