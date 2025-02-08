@@ -625,8 +625,8 @@ const MeetingPage = () => {
    * 取得したテキストを既存のメッセージ送信 API に渡す処理
    */
   const sendMessage = async (text: string): Promise<void> => {
-    try {
-      const response = await axios.post(
+    axios
+      .post(
         `${CLOUD_RUN_ENDPOINT}/message`,
         {
           meeting_id: channel,
@@ -634,15 +634,15 @@ const MeetingPage = () => {
           message: text,
         },
         {
-          headers: {
-            "Content-type": "application/json; charset=UTF-8",
-          },
+          headers: { "Content-type": "application/json; charset=UTF-8" },
         },
       )
-      console.log("[sendMessage] メッセージ送信成功", response.data)
-    } catch (error) {
-      console.error("[sendMessage] メッセージ送信エラー:", error)
-    }
+      .then((response) => {
+        console.log("[sendMessage] メッセージ送信成功", response.data)
+      })
+      .catch((error) => {
+        console.error("[sendMessage] メッセージ送信エラー:", error)
+      })
   }
 
   /**
