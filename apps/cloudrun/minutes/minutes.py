@@ -172,24 +172,6 @@ def update_minutes(meeting_id: str):
                     {MinutesFields.DECISIONS: firestore.ArrayUnion([new_decision])}
                 )
 
-    ### 決定事項の処理 ###
-    # --- 決定事項の追加 ---
-    if action_decisions.get("add_decision"):
-        add_decision_text = action_decisions.get("add_decision_text")
-        if add_decision_text:
-            existing_decisions = existing_minutes.get(MinutesFields.DECISIONS, [])
-            if any(d["text"] == add_decision_text for d in existing_decisions):
-                print(f"⚠️ [スキップ] 同じ決定事項が既に存在: {add_decision_text}")
-            else:
-                new_decision = {
-                    "id": f"decision_{uuid4().hex}",
-                    "text": add_decision_text,
-                }
-                print(f"✅ [追加] 新しい決定事項: {new_decision}")
-                doc_ref.update(
-                    {MinutesFields.DECISIONS: firestore.ArrayUnion([new_decision])}
-                )
-
     # --- 決定事項の更新 ---
     if action_decisions.get("update_decision"):
         target_id = action_decisions["decision_id"]
