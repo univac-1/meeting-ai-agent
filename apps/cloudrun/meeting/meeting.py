@@ -13,6 +13,19 @@ class AgendaItem(TypedDict):
 db_client = Config.get_db_client()
 
 
+def generate_meeting_id():
+    uuid_int = uuid.uuid4().int  # UUIDを整数に変換
+    base36 = ""
+    chars = "0123456789abcdefghijklmnopqrstuvwxyz"  # 小文字の36進数
+
+    # 36 進数に変換（8 桁分を取得）
+    for _ in range(8):
+        base36 = chars[uuid_int % 36] + base36
+        uuid_int //= 36
+
+    return base36
+
+
 def create_meeting(
     meeting_name: str,
     participants: List[str],
@@ -38,7 +51,7 @@ def create_meeting(
         str: 生成されたユニークな会議ID
     """
     # 会議IDの生成
-    meeting_id = str(uuid.uuid4())[:8]
+    meeting_id = generate_meeting_id()
 
     # 保存するデータの構築
     data = {
