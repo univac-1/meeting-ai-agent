@@ -44,9 +44,7 @@ def get_message_history(meeting_id: str, limit_to_last: Optional[int] = None):
         data = comment.to_dict()
         # AIの発言以外をフィルタリング
         meta = data.get("meta")
-        if meta is None or meta.get("role", '') != "ai":
+        if meta is None or meta.get("role", "") != "ai":
             message_history.append(data)
-
-    print(message_history)
 
     return message_history
