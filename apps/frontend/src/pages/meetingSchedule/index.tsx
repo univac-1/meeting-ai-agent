@@ -131,9 +131,6 @@ const MeetingSchedulePage = () => {
       {contextHolder}
       <section className={styles.content}>
         <div className={styles.title}>
-          <div className={styles.logo}>
-            <img src={logoSrc} alt="" />
-          </div>
           <div className={styles.text}>Schedule Meeting</div>
         </div>
         <div className={styles.item}>
