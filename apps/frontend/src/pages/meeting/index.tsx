@@ -179,6 +179,9 @@ const MeetingPage = () => {
           if (data.intervention_request?.status === "pending") {
             console.log("介入リクエストがペンディング状態になりました。")
             openNotification()
+          } else if (data.intervention_request?.status === "completed") {
+            console.log("介入リクエストが完了しました。通知を閉じます。")
+            api.destroy()  // すべての通知を閉じる
           }
         } else {
           console.log("ドキュメントが存在しません")
