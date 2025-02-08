@@ -87,7 +87,9 @@ const MeetingPage = () => {
   const [centerUserId, setCenterUserId] = useState(userInfo.userId)
 
   // notification
-  const [api, contextHolder] = notification.useNotification()
+  const [api, contextHolder] = notification.useNotification({
+    maxCount: 1
+  })
 
   const meetingId = useSelector((state: RootState) => state.global.meetingId)
   const initialLoadRef = useRef(true)
@@ -122,6 +124,11 @@ const MeetingPage = () => {
   // 通知を表示する
   const openNotification = () => {
     console.log("openNotification")
+
+    notification.config({
+      maxCount: 1
+    });
+
     const key = `open${Date.now()}`
     const btn = (
       <Space>
