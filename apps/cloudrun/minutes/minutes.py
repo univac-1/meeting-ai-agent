@@ -11,6 +11,9 @@ from meeting.meeting import AgendaItem
 from google.cloud import firestore
 from uuid import uuid4
 
+# 更新対象外にする文字列数
+MIN_MESSAGE_LENGTH = 10
+
 db_client = Config.get_db_client()
 
 
@@ -37,7 +40,7 @@ def should_update_minutes(message_history: list, existing_minutes: dict) -> dict
 
     latest_message = message_history[-1]  # 最新の発言
     print(latest_message.get("message"))
-    if len(latest_message.get("message", "")) <= 5:
+    if len(latest_message.get("message", "")) <= MIN_MESSAGE_LENGTH:
         print(f"発言が短いので更新対象外")
         return {}
     past_messages = message_history[:-1]  # それ以前の履歴
@@ -181,6 +184,8 @@ def update_minutes(meeting_id: str):
             decisions = existing_minutes.get(MinutesFields.DECISIONS, [])
             for decision in decisions:
                 if decision["id"] == target_id:
+                    if decision["txet"] == new_decision_text:
+                        break
                     old_text = decision["text"]
                     decision["text"] = new_decision_text
                     print(
@@ -235,6 +240,8 @@ def update_minutes(meeting_id: str):
             actions = existing_minutes.get(MinutesFields.ACTION_PLAN, [])
             for action in actions:
                 if action["id"] == target_action_id:
+                    if action["task"] == new_decision_text:
+                        break
                     old_action = action.copy()  # 旧値を記録
                     action.update(
                         {
