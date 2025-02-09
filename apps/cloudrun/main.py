@@ -17,7 +17,9 @@ app = Flask(__name__)
 app.json.ensure_ascii = False
 
 # CORSを有効化
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(
+    app, resources={r"/*": {"origins": "https://ai-agent-hackthon-with-goole.web.app"}}
+)
 
 
 @app.route("/")
