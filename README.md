@@ -7,14 +7,14 @@
 ## ディレクトリ構成
 ```
 .
-├── apps/
-│   ├── frontend/      # フロントエンドアプリケーション
-│   └── cloudrun/      # Cloud Runサービス
+└── apps/
+    ├── frontend/      # フロントエンドアプリケーション
+    └── cloudrun/      # Cloud Runサービス
 ```
 
 ## デプロイ方法
 このプロジェクトはGitHub Actionsを使用してデプロイされます。  
-tagをpushがトリガーになっています。（バックとフロントでトリガーを分けたい ＆ Github Actionsを無料枠に抑えたいので）
+tagのpushがトリガーになっています。（バックとフロントでトリガーを分けたい ＆ Github Actionsを無料枠に抑えたいので）
 
 ### Cloud Runへのデプロイ
 先頭が`b`から始まるtagをpushするとデプロイが走ります。
@@ -27,9 +27,3 @@ b-mmdd-HHMM
 ```
 f-mmdd-HHMM
 ```
-
-## エンドポイント
-- フロントエンド（Firebase Hosting）
-  - https://ai-agent-hackthon-with-goole.web.app/
-- バックエンド（Cloud Run）
-  - https://meeting-ai-agent-132459894103.asia-northeast1.run.app/
